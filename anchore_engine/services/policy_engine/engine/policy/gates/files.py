@@ -2,27 +2,25 @@ import re
 import stat
 from anchore_engine.services.policy_engine.engine.policy.gate import Gate, BaseTrigger
 from anchore_engine.services.policy_engine.engine.logs import get_logger
-from anchore_engine.services.policy_engine.engine.policy.params import PipeDelimitedStringListParameter
+from anchore_engine.services.policy_engine.engine.policy.params import PipeDelimitedStringListParameter, TriggerParameter, TypeValidator
 from anchore_engine.db import AnalysisArtifact
 log = get_logger()
 
 
 class ContentMatchTrigger(BaseTrigger):
     __trigger_name__ = 'content_regex_match'
-    __aliases__ = ['contentmatch']
-    __description__ = 'Triggers if the content search analyzer has found any matches.  If the parameter is set, then will only trigger against found matches that are also in the FILECHECK_CONTENTMATCH parameter list.  If the parameter is absent or blank, then the trigger will fire if the analyzer found any matches.'
+    __description__ = 'Triggers for each file where the content search analyzer has found a match. If the parameter is set, the trigger will only fire for files that matched the named regex. Refer to your analyzer configs for the regex names.'
 
-    contentregex_names = PipeDelimitedStringListParameter(name='regex_names', aliases=['filecheck_contentregexp'], description='Pipe delimited list of named regexes from the FILECHECK_CONTENTMATCH parameter list for the analyzers')
+    regex_name = TriggerParameter(validator=TypeValidator('string'), name='regex_name', example_str='"example_username_regex"', description='Name of regex from the FILECHECK_CONTENTMATCH analyzer parameter in analyzer configuration to limit the check to. If set, will only fire trigger when the specific named regex was found in a file.',
+                                  is_required=False)
 
     def evaluate(self, image_obj, context):
-        match_filter = self.contentregex_names.value()
+        match_filter = self.regex_name.value()
 
         if match_filter:
-            matches = [x.encode('base64') for x in match_filter]
-            matches_decoded = match_filter
+            match_decoded = match_filter.encode('base64')
         else:
-            matches = []
-            matches_decoded = []
+            return
 
         for thefile, regexps in context.data.get('content_regexp', {}).items():
             thefile = thefile.encode('ascii', errors='replace')
@@ -35,48 +33,36 @@ class ContentMatchTrigger(BaseTrigger):
                     regexp_name = None
                     theregexp = regexp.decode('base64')
 
-                if not matches:
+                if not match_filter:
                     self._fire(msg='File content analyzer found regexp match in container: file={} regexp={}'.format(thefile, regexp.decode('base64')))
-                elif regexp in matches or theregexp in matches_decoded:
+                elif regexp == match_filter or theregexp == match_decoded:
                     self._fire(msg='File content analyzer found regexp match in container: file={} regexp={}'.format(thefile, regexp.decode('base64')))
-                elif regexp_name and regexp_name in matches_decoded:
+                elif regexp_name and regexp_name == match_decoded:
                     self._fire(msg='File content analyzer found regexp match in container: file={} regexp={}'.format(thefile, regexp.decode('base64')))
 
 
 class FilenameMatchTrigger(BaseTrigger):
     __trigger_name__ = 'name_match'
-    __aliases__ = ['filenamematch']
-    __description__ = 'Triggers if a file exists in the container that matches with any of the regular expressions given as FILECHECK_NAMEREGEXP parameters.'
+    __description__ = 'Triggers if a file exists in the container that has a filename that matches the provided regex. This does have a performance impact on policy evaluation.'
 
-    regex_names = PipeDelimitedStringListParameter(name='regex_names', aliases=['filecheck_nameregexp'], description='Pipe-delimited list of names of regexes from the FILECHECK_NAMEREGEXP parameter in the analyzer configuration')
+    regex = TriggerParameter(validator=TypeValidator('string'), name='regex', example_str='".*\.pem"', description='Regex to apply to file names for match', is_required=True)
 
     def evaluate(self, image_obj, context):
         # decode the param regexes from b64
-        fname_regexps = []
-        regex_param = self.regex_names.value()
+        regex_param = self.regex.value()
 
-        if regex_param:
-            fname_regexps = regex_param
-
-        if not fname_regexps:
-            # Short circuit
-            return
-
-        if context.data.get('filenames'):
+        files = []
+        if hasattr(context, 'data'):
             files = context.data.get('filenames')
-        else:
-            files = image_obj.fs.files().keys()  # returns a map of path -> entry
 
         for thefile in files:
             thefile = thefile.encode('ascii', errors='replace')
-            for regexp in fname_regexps:
-                if re.match(regexp, thefile):
-                    self._fire(msg='Application of regexp matched file found in container: file={} regexp={}'.format(thefile, regexp))
+            if re.match(regex_param, thefile):
+                self._fire(msg='Application of regex matched file found in container: file={} regexp={}'.format(thefile, regex_param))
 
 
 class SuidCheckTrigger(BaseTrigger):
     __trigger_name__ = 'suid_guid_set'
-    __aliases__ = ['suidsgidcheck']
     __description__ = 'Fires for each file found to have suid or sgid set'
 
     def evaluate(self, image_obj, context):
@@ -94,8 +80,7 @@ class SuidCheckTrigger(BaseTrigger):
 
 class FileCheckGate(Gate):
     __gate_name__ = 'files'
-    __aliases__ = ['filecheck']
-    __description__ = 'Image File Checks'
+    __description__ = 'Checks against files in the analyzed image including file content, file names, and filesystem attributes'
     __triggers__ = [
         ContentMatchTrigger,
         FilenameMatchTrigger,

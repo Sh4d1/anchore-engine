@@ -1,5 +1,5 @@
 from anchore_engine.services.policy_engine.engine.policy.gate import Gate, BaseTrigger
-from anchore_engine.services.policy_engine.engine.policy.params import CommaDelimitedStringListParameter, NameVersionStringListParameter
+from anchore_engine.services.policy_engine.engine.policy.params import CommaDelimitedStringListParameter, TriggerParameter, TypeValidator
 from anchore_engine.db import GemMetadata
 from anchore_engine.services.policy_engine.engine.logs import get_logger
 from anchore_engine.services.policy_engine.engine.feeds import DataFeeds
@@ -9,14 +9,13 @@ log = get_logger()
 # TODO; generalize these for any feed, with base classes and children per feed type
 
 FEED_KEY = 'gem'
-GEM_MATCH_KEY= 'matched_feed_gems'
+GEM_MATCH_KEY = 'matched_feed_gems'
 GEM_LIST_KEY = 'gems'
 
 
 class NotLatestTrigger(BaseTrigger):
     __trigger_name__ = 'newer_version_in_feed'
-    __aliases__ = ['gemnotlatest']
-    __description__ = 'triggers if an installed GEM is not the latest version according to GEM data feed'
+    __description__ = 'Triggers if an installed GEM is not the latest version according to GEM data feed'
 
     def evaluate(self, image_obj, context):
         """
@@ -43,8 +42,7 @@ class NotLatestTrigger(BaseTrigger):
 
 class NotOfficialTrigger(BaseTrigger):
     __trigger_name__ = 'unknown_in_feeds'
-    __aliases__ = ['gemnotofficial']
-    __description__ = 'triggers if an installed GEM is not in the official GEM database, according to GEM data feed'
+    __description__ = 'Triggers if an installed GEM is not in the official GEM database, according to GEM data feed'
 
     def evaluate(self, image_obj, context):
         """
@@ -72,8 +70,7 @@ class NotOfficialTrigger(BaseTrigger):
 
 class BadVersionTrigger(BaseTrigger):
     __trigger_name__ = 'version_not_in_feeds'
-    __aliases__ = ['gembadversion']
-    __description__ = 'triggers if an installed GEM version is not listed in the official GEM feed as a valid version'
+    __description__ = 'Triggers if an installed GEM version is not listed in the official GEM feed as a valid version'
 
     def evaluate(self, image_obj, context):
         """
@@ -102,11 +99,12 @@ class BadVersionTrigger(BaseTrigger):
                 self._fire(msg="GEMBADVERSION Package ("+gem+") version ("+v+") installed but version is not in the official feed for this package ("+str(feed_names.get(gem, '')) + ")")
 
 
-class PkgFullMatchTrigger(BaseTrigger):
-    __trigger_name__ = 'blacklisted_name_version'
-    __aliases__ = ['gempkgfullmatch']
-    __description__ = 'triggers if the evaluated image has an GEM package installed that matches one in the list given as a param (package_name|vers)'
-    fullmatch_blacklist = NameVersionStringListParameter(name='names_versions', aliases=['blacklist_gemfullmatch'], description='List of name|version entries that are matched exactly for blacklist', is_required=False)
+class BlacklistedGemTrigger(BaseTrigger):
+    __trigger_name__ = 'blacklist'
+    __description__ = 'Triggers if the evaluated image has an GEM package installed that matches one in the list given as a param (package_name|vers)'
+
+    name = TriggerParameter(validator=TypeValidator('string'), name='name', is_required=True, description='Gem name to blacklist', example_str='"time_diff"', sort_order=1)
+    version = TriggerParameter(validator=TypeValidator('string'), name='version', is_required=False, description='Version to blacklist specifically', example_str='"0.2.9"', sort_order=2)
 
     def evaluate(self, image_obj, context):
         """
@@ -123,42 +121,19 @@ class PkgFullMatchTrigger(BaseTrigger):
         if not pkgs:
             return
 
-        blacklist_pkgs = self.fullmatch_blacklist.value()
-        if blacklist_pkgs is None:
-            blacklist_pkgs = {}
+        name = self.name.value()
+        version = self.version.value(default_if_none=None)
 
-        for pkg, vers in blacklist_pkgs.items():
-            if pkg in pkgs and vers in pkgs.get(pkg, []):
-                self._fire(msg='GEMPKGFULLMATCH Package is blacklisted: '+pkg+"-"+vers)
-
-
-class PkgNameMatchTrigger(BaseTrigger):
-    __trigger_name__ = 'blacklisted_names'
-    __aliases__ = ['gempkgnamematch']
-    __description__ = 'triggers if the evaluated image has an GEM package installed that matches one in the list given as a param (package_name)'
-    namematch_blacklist = CommaDelimitedStringListParameter(name='names', aliases=['blacklist_gemnamematch'], description='List of gem package names that are blacklisted and will cause trigger to fire if detected in image')
-
-    def evaluate(self, image_obj, context):
-        gems = image_obj.gems
-        if not gems:
-            return
-
-        pkgs = context.data.get(GEM_LIST_KEY)
-        if not pkgs:
-            return
-        blacklist = self.namematch_blacklist.value()
-        if blacklist is None:
-            blacklist = []
-
-        for match_val in blacklist:
-            if match_val and match_val in pkgs:
-                self._fire(msg='GEMPKGNAMEMATCH Package is blacklisted: ' + match_val)
+        if name in pkgs:
+            if version and version in pkgs.get(name, []):
+                self._fire(msg='Gem Package is blacklisted: ' + name + "-" + version)
+            elif version is None:
+                self._fire(msg='Gem Package is blacklisted: ' + name)
 
 
 class NoFeedTrigger(BaseTrigger):
     __trigger_name__ = 'feed_data_unavailable'
-    __aliases__ = ['gemnofeed']
-    __description__ = 'triggers if anchore does not have access to the GEM data feed'
+    __description__ = 'Triggers if anchore does not have access to the GEM data feed'
     __msg__ = "GEMNOFEED GEM packages are present but the anchore GEM feed is not available - will be unable to perform checks that require feed data"
 
     def evaluate(self, image_obj, context):
@@ -175,14 +150,12 @@ class NoFeedTrigger(BaseTrigger):
 
 class GemCheckGate(Gate):
         __gate_name__ = 'ruby_gems'
-        __aliases__ = ['gemcheck']
         __description__ = 'Ruby Gem Checks'
         __triggers__ = [
             NotLatestTrigger,
             NotOfficialTrigger,
             BadVersionTrigger,
-            PkgFullMatchTrigger,
-            PkgNameMatchTrigger,
+            BlacklistedGemTrigger,
             NoFeedTrigger
         ]
 
