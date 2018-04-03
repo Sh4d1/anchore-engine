@@ -331,7 +331,7 @@ class BundleExecution(object):
                     'header': self.CLI_COMPATIBLE_HEADER_SET,
                     'row_count': len(self.bundle_decision.policy_decision.decisions),
                     'rows': [self._row_json(t) for t in self.bundle_decision.policy_decision.decisions],
-                    'final_action': self.bundle_decision.final_decision.name.upper(),
+                    'final_action': self.bundle_decision.policy_decision.final_decision.name,
                 },
             },
             'policy_name': self.executed_mapping.policy_id if self.executed_mapping else '',
