@@ -9,9 +9,9 @@ log = get_logger()
 
 class ContentMatchTrigger(BaseTrigger):
     __trigger_name__ = 'content_regex_match'
-    __description__ = 'Triggers for each file where the content search analyzer has found a match. If the parameter is set, the trigger will only fire for files that matched the named regex. Refer to your analyzer configs for the regex names.'
+    __description__ = 'Triggers for each file where the content search analyzer has found a match using configured regexes in the analyzer_config.yaml "content_search" section. If the parameter is set, the trigger will only fire for files that matched the named regex. Refer to your analyzer_config.yaml for the regex values'
 
-    regex_name = TriggerParameter(validator=TypeValidator('string'), name='regex_name', example_str='my_configured_regexname', description='Name of regex from the FILECHECK_CONTENTMATCH analyzer parameter in analyzer configuration to limit the check to. If set, will only fire trigger when the specific named regex was found in a file.',
+    regex_name = TriggerParameter(validator=TypeValidator('string'), name='regex_name', example_str='.*password.*', description='Regex string that also appears in the FILECHECK_CONTENTMATCH analyzer parameter in analyzer configuration, to limit the check to. If set, will only fire trigger when the specific named regex was found in a file.',
                                   is_required=False)
 
     def evaluate(self, image_obj, context):
@@ -62,8 +62,8 @@ class FilenameMatchTrigger(BaseTrigger):
 
 
 class SuidCheckTrigger(BaseTrigger):
-    __trigger_name__ = 'suid_guid_set'
-    __description__ = 'Fires for each file found to have suid or sgid set'
+    __trigger_name__ = 'suid_or_guid_set'
+    __description__ = 'Fires for each file found to have suid or sgid bit set'
 
     def evaluate(self, image_obj, context):
         if not image_obj.fs:
@@ -92,6 +92,7 @@ class FileCheckGate(Gate):
         prepare the context by extracting the file name list once and placing it in the eval context to avoid repeated
         loads from the db. this is an optimization and could removed.
 
+        :rtype:
         :param image_obj:
         :param context:
         :return:

@@ -12,7 +12,7 @@ from anchore_engine.subsys import logger
 from anchore_engine.services.policy_engine.engine.policy.params import TriggerParameter
 from anchore_engine.services.policy_engine.engine.policy.exceptions import ParameterValueInvalidError, InvalidParameterError,  \
     TriggerEvaluationError, PolicyRuleValidationErrorCollection, ValidationError
-from anchore_engine.services.policy_engine.engine.policy.exceptions import LifecycleWarning
+from anchore_engine.services.policy_engine.engine.policy.exceptions import EndOfLifedError
 
 
 class LifecycleStates(enum.Enum):
@@ -147,7 +147,7 @@ class BaseTrigger(LifecycleMixin):
         self.rule_id = rule_id
 
         # Short circuit if gate is eol or trigger is eol
-        if self.gate_cls.__lifecycle__state__ == LifecycleStates.eol or self.__lifecycle_state__ == LifecycleStates.eol:
+        if self.gate_cls.__lifecycle_state__ == LifecycleStates.eol or self.__lifecycle_state__ == LifecycleStates.eol:
             return
 
         # Setup the parameters, try setting each. If not provided, set to None to handle validation path for required params
@@ -226,9 +226,9 @@ class BaseTrigger(LifecycleMixin):
         """
         self.reset()
 
-        if self.gate_cls.__lifecycle__state__ == LifecycleStates.eol or self.__lifecycle_state__ == LifecycleStates.eol:
-            raise LifecycleWarning(gate_name=self.gate_cls.__gate_name__, trigger_name=self.__trigger_name__, state=self.__lifecycle_state__, superceded=self.__superceded_by__)
-        else:
+        if self.gate_cls.__lifecycle_state__ != LifecycleStates.eol and self.__lifecycle_state__ != LifecycleStates.eol:
+            if image_obj is None:
+                raise TriggerEvaluationError(trigger=self, message='No image provided to evaluate against')
             try:
                 self.evaluate(image_obj, context)
             except Exception as e:
@@ -341,13 +341,6 @@ class Gate(LifecycleMixin):
     def trigger_names(cls):
         return [x.__trigger_name__.lower() for x in cls.__triggers__]
 
-    # @classmethod
-    # def is_deprecated_trigger(cls, name):
-    #     if name is None:
-    #         raise ValueError('Trigger name cannot be None')
-    #
-    #     return name.lower() in cls.__deprecated_trigger_names__
-
     @classmethod
     def get_trigger_named(cls, name):
         """
@@ -377,7 +370,8 @@ class Gate(LifecycleMixin):
         """
         Called immediately prior to gate execution, a hook to allow optimizations or prep of the context or image
         data prior to execution of the gate/triggers.
-        :return:         
+        :rtype:
+        :return:
         """
         return context
 

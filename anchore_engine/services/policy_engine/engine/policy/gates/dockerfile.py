@@ -83,13 +83,13 @@ class EffectiveUserTrigger(DockerfileModeCheckedBaseTrigger):
     __description__ = 'Checks if the effective user matches the provided user names and fires based on the allowed parameter. If allowed=true, the rule behaves as a whitelist, otherwise acts as a blacklist.'
 
     user = CommaDelimitedStringListParameter(name='users', example_str='root,docker', description='User names to check against as the effective user (last user entry) in the images history', is_required=True, validator=TypeValidator('string'), sort_order=1)
-    allowed = BooleanStringParameter(name='allowed', is_required=True, sort_order=2)
+    allowed_type = EnumStringParameter(name='type', enum_values=['whitelist', 'blacklist'], description='How to treat the provided user names', is_required=True, sort_order=2)
 
     _sanitize_regex = '\s*USER\s+\[?([^\]]+)\]?\s*'
 
     def _evaluate(self, image_obj, context):
-        rule_user = self.user.value()
-        is_allowed = self.allowed.value().lower() == 'true'
+        rule_users = self.user.value()
+        is_allowed = self.allowed_type.value().lower() == 'whitelist'
 
         user_lines = context.data.get('prepared_dockerfile').get('USER', [])
 
@@ -105,9 +105,9 @@ class EffectiveUserTrigger(DockerfileModeCheckedBaseTrigger):
             log.warn('Found USER line in dockerfile that does not match expected regex: {}, Line: {}'.format(self._sanitize_regex, user))
             return
 
-        if is_allowed and user != rule_user:
+        if is_allowed and user not in rule_users:
             self._fire(msg='User {} found as effective user, which is not on the allowed list'.format(user))
-        elif not is_allowed and user == rule_user:
+        elif not is_allowed and user in rule_users:
             self._fire(msg='User {} found as effective user, which is explicity not allowed list'.format(user))
 
 
@@ -163,16 +163,18 @@ class ExposedPortsTrigger(ParameterizedDockerfileModeBaseTrigger):
     __trigger_name__ = 'exposed_ports'
     __description__ = 'Evaluates on the set of ports found to be exposed in the dockerfile or docker layer history. Allows configuring whitelist or blacklist behavior. If allowed=True then any ports found exposed that are not in the list will cause the trigger to fire. If allowed=False than any ports exposed that are in the list will cause the trigger to fire.'
 
-    ports = CommaDelimitedNumberListParameter(name='ports', example_str='80,8080,8088', description='List of port numbers that will cause the trigger to fire', is_required=True, sort_order=1)
-    allowed = BooleanStringParameter(name='allowed', example_str='false', description='Whether to trigger on matches or non-matches', is_required=True, sort_order=2)
+    ports = CommaDelimitedNumberListParameter(name='ports', example_str='80,8080,8088', description='Comma-delimited list of port numbers that will cause the trigger to fire', is_required=True, sort_order=1)
+    allowed_type = EnumStringParameter(name='type', example_str='false', enum_values=['whitelist', 'blacklist'], description='Whether to use port list as a whitelist or blacklist', is_required=True, sort_order=2)
 
     def _evaluate(self, image_obj, context):
-        if self.allowed.value():
-            allowed_ports = [str(x) for x in self.ports.value(default_if_none=[])]
-            denied_ports = []
+        if self.allowed_type.value().lower() == 'whitelist':
+            whitelisted_ports = [str(x) for x in self.ports.value(default_if_none=[])]
+            blacklisted_ports = []
+        elif self.allowed_type.value().lower() == 'blacklist':
+            whitelisted_ports = []
+            blacklisted_ports = [str(x) for x in self.ports.value(default_if_none=[])]
         else:
-            allowed_ports = []
-            denied_ports = [str(x) for x in self.ports.value(default_if_none=[])]
+            raise ValueError('Invalid value for "type" parameter: {}'.format(self.allowed_type.value()))
 
         expose_lines = context.data.get('prepared_dockerfile', {}).get('EXPOSE', [])
 
@@ -184,11 +186,11 @@ class ExposedPortsTrigger(ParameterizedDockerfileModeBaseTrigger):
 
             if matchstr:
                 iexpose = matchstr.split()
-                if denied_ports:
-                    if 0 in denied_ports and len(iexpose) > 0:
+                if blacklisted_ports:
+                    if 0 in blacklisted_ports and len(iexpose) > 0:
                         self._fire(msg="Dockerfile exposes network ports but policy sets DENIEDPORTS=0: " + str(iexpose))
                     else:
-                        for p in denied_ports:
+                        for p in blacklisted_ports:
                             if p in iexpose:
                                 self._fire(msg="Dockerfile exposes port (" + p + ") which is in policy file DENIEDPORTS list")
                             elif p + '/tcp' in iexpose:
@@ -196,11 +198,11 @@ class ExposedPortsTrigger(ParameterizedDockerfileModeBaseTrigger):
                             elif p + '/udp' in iexpose:
                                 self._fire(msg="Dockerfile exposes port (" + p + "/udp) which is in policy file DENIEDPORTS list")
 
-                if allowed_ports:
-                    if 0 in allowed_ports and len(iexpose) > 0:
+                if whitelisted_ports:
+                    if 0 in whitelisted_ports and len(iexpose) > 0:
                         self._fire(msg="Dockerfile exposes network ports but policy sets ALLOWEDPORTS=0: " + str(iexpose))
                     else:
-                        for p in allowed_ports:
+                        for p in whitelisted_ports:
                             done = False
                             while not done:
                                 try:
@@ -227,7 +229,7 @@ class ExposedPortsTrigger(ParameterizedDockerfileModeBaseTrigger):
 
 
 class NoDockerfile(BaseTrigger):
-    __trigger_name__ = 'not_provided'
+    __trigger_name__ = 'no_dockerfile_provided'
     __description__ = 'Triggers if anchore analysis was performed without supplying the actual image Dockerfile. Checks if the dockerfile mode is "actual" or "guessed", and is related to the "actual_dockerfile_only" paramter available in other triggers in its behavior'
     __msg__ = 'Image was not analyzed with an actual Dockerfile'
 
@@ -257,6 +259,7 @@ class DockerfileGate(Gate):
         context.data['dockerfile']['RUN'] = ['RUN apt-get update', 'RUN blah']
         context.data['dockerfile']['VOLUME'] = ['VOLUME /tmp', 'VOLUME /var/log']
         
+        :rtype: object
         :return: updated context
         """
 

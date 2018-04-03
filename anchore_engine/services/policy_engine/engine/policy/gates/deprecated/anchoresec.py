@@ -140,6 +140,10 @@ class AnchoreSecGate(Gate):
     ]
 
     def prepare_context(self, image_obj, context):
+        """
+
+        :rtype:
+        """
         # Load the vulnerability info up front
         context.data['loaded_vulnerabilities'] = image_obj.vulnerabilities()
         return context

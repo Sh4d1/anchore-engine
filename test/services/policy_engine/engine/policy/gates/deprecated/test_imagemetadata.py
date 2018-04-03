@@ -6,7 +6,7 @@ from test.services.policy_engine.engine.policy.gates import GateUnitTest
 from anchore_engine.services.policy_engine.engine.policy.gate import ExecutionContext
 from anchore_engine.db import Image
 
-from anchore_engine.services.policy_engine.engine.policy.gates.image_metadata import ImageMetadataGate, ImageMetadataAttributeCheckTrigger
+from anchore_engine.services.policy_engine.engine.policy.gates.deprecated.image_metadata import ImageMetadataGate, ImageMetadataAttributeCheckTrigger
 
 test_image = Image()
 test_image.distro_name = 'debian'

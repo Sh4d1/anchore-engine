@@ -25,4 +25,8 @@ class AlwaysGate(Gate):
     __triggers__ = [AlwaysFireTrigger]
 
     def prepare_context(self, image_obj, context):
+        """
+
+        :rtype:
+        """
         return context

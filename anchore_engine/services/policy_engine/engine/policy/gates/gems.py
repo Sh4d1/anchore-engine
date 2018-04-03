@@ -162,6 +162,7 @@ class GemCheckGate(Gate):
         def prepare_context(self, image_obj, context):
             """
             Prep the gem names and versions
+            :rtype:
             :param image_obj:
             :param context:
             :return:

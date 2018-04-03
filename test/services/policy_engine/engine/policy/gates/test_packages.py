@@ -2,8 +2,7 @@ import unittest
 
 from test.services.policy_engine.engine.policy.gates import GateUnitTest
 from anchore_engine.db import Image, ImagePackageManifestEntry
-from anchore_engine.services.policy_engine.engine.policy.gate import ExecutionContext
-from anchore_engine.services.policy_engine.engine.policy.gates.packages import PackagesCheckGate, PkgNotPresentTrigger, VerifyTrigger, BlackListTrigger, BlacklistNameMatchTrigger
+from anchore_engine.services.policy_engine.engine.policy.gates.packages import PackagesCheckGate, RequiredPackageTrigger, VerifyTrigger, BlackListTrigger
 from anchore_engine.db import get_thread_scoped_session
 
 
@@ -11,61 +10,77 @@ class PackageCheckGateTest(GateUnitTest):
     __default_image__ = 'debian' # Testing against a specifically broken analysis output (hand edited to fail in predictable ways)
     gate_clazz = PackagesCheckGate
 
-    def get_initialized_trigger(self, name, config=None, **kwargs):
-        clazz = self.gate_clazz.get_trigger_named(name)
-        trigger = clazz(self.gate_clazz, **kwargs)
-        context = ExecutionContext(db_session=get_thread_scoped_session(), configuration=config)
-        gate = trigger.gate_cls()
-
-        return trigger, gate, context
-
-    def test_fullmatch(self):
+    def test_blacklist(self):
+        # Match
         t, gate, test_context = self.get_initialized_trigger(BlackListTrigger.__trigger_name__,
-                                                             blacklist_fullmatch='binutils|2.25-5+deb8u1,libssl|123')
+                                                             name='binutils', version='2.25-5+deb8u1')
         db = get_thread_scoped_session()
         image = db.query(Image).get((self.test_env.get_images_named('node')[0][0], '0'))
         test_context = gate.prepare_context(image, test_context)
         t.evaluate(image, test_context)
         print('Fired: {}'.format(t.fired))
-        self.assertEqual(len(t.fired), 1)
+        self.assertEqual(1, len(t.fired))
 
-    def test_namematch(self):
-        t, gate, test_context = self.get_initialized_trigger(BlacklistNameMatchTrigger.__trigger_name__,
-                                                             blacklist_namematch='binutils,libssl')
+        # No match
+        t, gate, test_context = self.get_initialized_trigger(BlackListTrigger.__trigger_name__,
+                                                             name='binutils', version='2.25-5+bpo9u1')
         db = get_thread_scoped_session()
         image = db.query(Image).get((self.test_env.get_images_named('node')[0][0], '0'))
         test_context = gate.prepare_context(image, test_context)
         t.evaluate(image, test_context)
         print('Fired: {}'.format(t.fired))
-        self.assertEqual(len(t.fired), 1)
+        self.assertEqual(0, len(t.fired))
 
-    def test_pkgnotpresentdiff(self):
+        # Match
+        t, gate, test_context = self.get_initialized_trigger(BlackListTrigger.__trigger_name__,
+                                                             name='binutils')
+        db = get_thread_scoped_session()
+        image = db.query(Image).get((self.test_env.get_images_named('node')[0][0], '0'))
+        test_context = gate.prepare_context(image, test_context)
+        t.evaluate(image, test_context)
+        print('Fired: {}'.format(t.fired))
+        self.assertEqual(1, len(t.fired))
+
+        # No match
+        t, gate, test_context = self.get_initialized_trigger(BlackListTrigger.__trigger_name__,
+                                                             name='binutilitiesnotreal')
+        db = get_thread_scoped_session()
+        image = db.query(Image).get((self.test_env.get_images_named('node')[0][0], '0'))
+        test_context = gate.prepare_context(image, test_context)
+        t.evaluate(image, test_context)
+        print('Fired: {}'.format(t.fired))
+        self.assertEqual(0, len(t.fired))
+
+    def test_pkg_required(self):
         db = get_thread_scoped_session()
         try:
             image = db.query(Image).get((self.test_env.get_images_named('node')[0][0], '0'))
-            t, gate, test_context = self.get_initialized_trigger(PkgNotPresentTrigger.__trigger_name__, pkgfullmatch='binutils|2.25-5+deb8u1,libssl|123')
+            # Image has '2.25-5+deb8u1'
+            t, gate, test_context = self.get_initialized_trigger(RequiredPackageTrigger.__trigger_name__, name='binutils', version='2.25-6+deb8u1')
             test_context = gate.prepare_context(image, test_context)
             t.evaluate(image, test_context)
             print('Fired: {}'.format(t.fired))
-            self.assertEqual(len(t.fired), 1)
+            self.assertEqual(1, len(t.fired))
 
-            t, gate, test_context = self.get_initialized_trigger(PkgNotPresentTrigger.__trigger_name__, pkgnamematch='binutilityrepo,binutils')
+            # Image has '2.25-5+deb8u1'
+            t, gate, test_context = self.get_initialized_trigger(RequiredPackageTrigger.__trigger_name__, name='binutils', version='2.25-4+deb8u1', version_match_type='minimum')
             test_context = gate.prepare_context(image, test_context)
             t.evaluate(image, test_context)
             print('Fired: {}'.format(t.fired))
-            self.assertEqual(len(t.fired), 1)
+            self.assertEqual(0, len(t.fired))
 
-            t, gate, test_context = self.get_initialized_trigger(PkgNotPresentTrigger.__trigger_name__, pkgversmatch='binutils|2.25-5+deb8u1,randopackage|123,binutils|3.25-5+deb8u1')
+            t, gate, test_context = self.get_initialized_trigger(RequiredPackageTrigger.__trigger_name__, name='binutilityrepo')
             test_context = gate.prepare_context(image, test_context)
             t.evaluate(image, test_context)
             print('Fired: {}'.format(t.fired))
-            self.assertEqual(len(t.fired), 2)
+            self.assertEqual(1, len(t.fired))
 
-            t, gate, test_context = self.get_initialized_trigger(PkgNotPresentTrigger.__trigger_name__, pkgfullmatch='binutils|2.25-5+deb8u1,libssl|123', pkgnamematch='binutils,foobar', pkgversmatch='binutils|2.25-5+deb8u1,libssl|10.2,blamo|123.123')
+            t, gate, test_context = self.get_initialized_trigger(RequiredPackageTrigger.__trigger_name__, name='binutils', version='2.25-6+deb8u1', version_match_type='exact')
             test_context = gate.prepare_context(image, test_context)
             t.evaluate(image, test_context)
             print('Fired: {}'.format(t.fired))
-            self.assertEqual(len(t.fired), 4)
+            self.assertEqual(1, len(t.fired))
+
         finally:
             db.rollback()
 
@@ -88,7 +103,7 @@ class PackageCheckGateTest(GateUnitTest):
         self.assertTrue(('missing' in t.fired[0].msg and 'changed' in t.fired[1].msg) or ('missing' in t.fired[1].msg and 'changed' in t.fired[0].msg))
 
         print('Specific dirs and check only changed')
-        t, gate, test_context = self.get_initialized_trigger(VerifyTrigger.__trigger_name__, dirs='/bin,/usr/bin,/usr/local/bin,/usr/share/locale', check_only='changed')
+        t, gate, test_context = self.get_initialized_trigger(VerifyTrigger.__trigger_name__, only_directories='/bin,/usr/bin,/usr/local/bin,/usr/share/locale', check='changed')
         db = get_thread_scoped_session()
         db.refresh(self.test_image)
         test_context = gate.prepare_context(self.test_image, test_context)
@@ -98,7 +113,7 @@ class PackageCheckGateTest(GateUnitTest):
         self.assertTrue('changed' in t.fired[0].msg)
 
         print('Check only missing')
-        t, gate, test_context = self.get_initialized_trigger(VerifyTrigger.__trigger_name__, check_only='missing')
+        t, gate, test_context = self.get_initialized_trigger(VerifyTrigger.__trigger_name__, check='missing')
         db = get_thread_scoped_session()
         db.refresh(self.test_image)
         test_context = gate.prepare_context(self.test_image, test_context)
@@ -108,7 +123,7 @@ class PackageCheckGateTest(GateUnitTest):
         self.assertTrue('missing' in t.fired[0].msg)
 
         print('Specific pkg, with issues')
-        t, gate, test_context = self.get_initialized_trigger(VerifyTrigger.__trigger_name__, pkgs='perl-base,libapt-pkg5.0,tzdata')
+        t, gate, test_context = self.get_initialized_trigger(VerifyTrigger.__trigger_name__, only_packages='perl-base,libapt-pkg5.0,tzdata')
         db = get_thread_scoped_session()
         db.refresh(self.test_image)
         test_context = gate.prepare_context(self.test_image, test_context)
@@ -118,7 +133,7 @@ class PackageCheckGateTest(GateUnitTest):
         self.assertTrue(('missing' in t.fired[0].msg and 'changed' in t.fired[1].msg) or ('missing' in t.fired[1].msg and 'changed' in t.fired[0].msg))
 
         print('Specific pkg, with issues')
-        t, gate, test_context = self.get_initialized_trigger(VerifyTrigger.__trigger_name__, pkgs='perl-base,tzdata')
+        t, gate, test_context = self.get_initialized_trigger(VerifyTrigger.__trigger_name__, only_packages='perl-base,tzdata')
         db = get_thread_scoped_session()
         db.refresh(self.test_image)
         test_context = gate.prepare_context(self.test_image, test_context)
@@ -128,7 +143,7 @@ class PackageCheckGateTest(GateUnitTest):
         self.assertTrue('missing' in t.fired[0].msg)
 
         print('Specific pkg, with issues')
-        t, gate, test_context = self.get_initialized_trigger(VerifyTrigger.__trigger_name__, pkgs='libapt-pkg5.0,tzdata')
+        t, gate, test_context = self.get_initialized_trigger(VerifyTrigger.__trigger_name__, only_packages='libapt-pkg5.0,tzdata')
         db = get_thread_scoped_session()
         db.refresh(self.test_image)
         test_context = gate.prepare_context(self.test_image, test_context)
@@ -138,7 +153,7 @@ class PackageCheckGateTest(GateUnitTest):
         self.assertTrue('changed' in t.fired[0].msg)
 
         print('Specific pkg, no issues')
-        t, gate, test_context = self.get_initialized_trigger(VerifyTrigger.__trigger_name__, pkgs='tzdata,openssl-client')
+        t, gate, test_context = self.get_initialized_trigger(VerifyTrigger.__trigger_name__, only_packages='tzdata,openssl-client')
         db = get_thread_scoped_session()
         db.refresh(self.test_image)
         test_context = gate.prepare_context(self.test_image, test_context)

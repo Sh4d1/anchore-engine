@@ -13,14 +13,6 @@ from anchore_engine.services.policy_engine.engine.policy.gates.passwd_file impor
 class FileparsePasswordGateTest(GateUnitTest):
     gate_clazz = FileparsePasswordGate
 
-    def get_initialized_trigger(self, name, config=None, **kwargs):
-        clazz = self.gate_clazz.get_trigger_named(name)
-        trigger = clazz(self.gate_clazz, **kwargs)
-        context = ExecutionContext(db_session=get_thread_scoped_session(), configuration=config)
-        gate = trigger.gate_cls()
-
-        return trigger, gate, context
-
     def test_filenotstored(self):
         db = get_thread_scoped_session()
         image = db.query(Image).get((self.test_env.get_images_named('centos7_verify')[0][0], '0'))
@@ -44,7 +36,7 @@ class FileparsePasswordGateTest(GateUnitTest):
     def test_userblacklist(self):
         db = get_thread_scoped_session()
         image = db.query(Image).get((self.test_env.get_images_named('centos7_verify')[0][0], '0'))
-        t, gate, test_context = self.get_initialized_trigger(UsernameMatchTrigger.__trigger_name__, usernameblacklist='mail,ftp,foobar')
+        t, gate, test_context = self.get_initialized_trigger(UsernameMatchTrigger.__trigger_name__, user_names='mail,ftp,foobar')
         db.refresh(self.test_image)
         test_context = gate.prepare_context(image, test_context)
         t.evaluate(self.test_image, test_context)
@@ -55,7 +47,7 @@ class FileparsePasswordGateTest(GateUnitTest):
     def test_uidblacklist(self):
         db = get_thread_scoped_session()
         image = db.query(Image).get((self.test_env.get_images_named('centos7_verify')[0][0], '0'))
-        t, gate, test_context = self.get_initialized_trigger(UserIdMatchTrigger.__trigger_name__, useridblacklist='5,100')
+        t, gate, test_context = self.get_initialized_trigger(UserIdMatchTrigger.__trigger_name__, user_ids='5,100')
         db.refresh(self.test_image)
         test_context = gate.prepare_context(image, test_context)
         t.evaluate(self.test_image, test_context)
@@ -66,7 +58,7 @@ class FileparsePasswordGateTest(GateUnitTest):
     def test_gidblacklist(self):
         db = get_thread_scoped_session()
         image = db.query(Image).get((self.test_env.get_images_named('centos7_verify')[0][0], '0'))
-        t, gate, test_context = self.get_initialized_trigger(GroupIdMatchTrigger.__trigger_name__, groupidblacklist='100,10000')
+        t, gate, test_context = self.get_initialized_trigger(GroupIdMatchTrigger.__trigger_name__, group_ids='100,10000')
         db.refresh(self.test_image)
         test_context = gate.prepare_context(image, test_context)
         t.evaluate(self.test_image, test_context)
@@ -77,7 +69,7 @@ class FileparsePasswordGateTest(GateUnitTest):
     def test_shellblacklist(self):
         db = get_thread_scoped_session()
         image = db.query(Image).get((self.test_env.get_images_named('centos7_verify')[0][0], '0'))
-        t, gate, test_context = self.get_initialized_trigger(ShellMatchTrigger.__trigger_name__, shellblacklist='/bin/bash,/bin/ksh')
+        t, gate, test_context = self.get_initialized_trigger(ShellMatchTrigger.__trigger_name__, shells='/bin/bash,/bin/ksh')
         db.refresh(self.test_image)
         test_context = gate.prepare_context(image, test_context)
         t.evaluate(self.test_image, test_context)
@@ -88,7 +80,7 @@ class FileparsePasswordGateTest(GateUnitTest):
     def test_pentryblacklist(self):
         db = get_thread_scoped_session()
         image = db.query(Image).get((self.test_env.get_images_named('centos7_verify')[0][0], '0'))
-        t, gate, test_context = self.get_initialized_trigger(PEntryMatchTrigger.__trigger_name__, pentryblacklist='mail:x:8:12:mail:/var/spool/mail:/sbin/nologin')
+        t, gate, test_context = self.get_initialized_trigger(PEntryMatchTrigger.__trigger_name__, entry='mail:x:8:12:mail:/var/spool/mail:/sbin/nologin')
         db.refresh(self.test_image)
         test_context = gate.prepare_context(image, test_context)
         t.evaluate(self.test_image, test_context)

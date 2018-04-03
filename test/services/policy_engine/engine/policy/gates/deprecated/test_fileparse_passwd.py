@@ -1,13 +1,13 @@
 from test.services.policy_engine.engine.policy.gates import GateUnitTest
 from anchore_engine.services.policy_engine.engine.policy.gate import ExecutionContext
 from anchore_engine.db import get_thread_scoped_session, Image
-from anchore_engine.services.policy_engine.engine.policy.gates.passwd_file import FileparsePasswordGate
-from anchore_engine.services.policy_engine.engine.policy.gates.passwd_file import FileNotStoredTrigger
-from anchore_engine.services.policy_engine.engine.policy.gates.passwd_file import UsernameMatchTrigger
-from anchore_engine.services.policy_engine.engine.policy.gates.passwd_file import UserIdMatchTrigger
-from anchore_engine.services.policy_engine.engine.policy.gates.passwd_file import GroupIdMatchTrigger
-from anchore_engine.services.policy_engine.engine.policy.gates.passwd_file import ShellMatchTrigger
-from anchore_engine.services.policy_engine.engine.policy.gates.passwd_file import PEntryMatchTrigger
+from anchore_engine.services.policy_engine.engine.policy.gates.deprecated.fileparse_passwd import FileparsePasswordGate
+from anchore_engine.services.policy_engine.engine.policy.gates.deprecated.fileparse_passwd import FileNotStoredTrigger
+from anchore_engine.services.policy_engine.engine.policy.gates.deprecated.fileparse_passwd import UsernameMatchTrigger
+from anchore_engine.services.policy_engine.engine.policy.gates.deprecated.fileparse_passwd import UserIdMatchTrigger
+from anchore_engine.services.policy_engine.engine.policy.gates.deprecated.fileparse_passwd import GroupIdMatchTrigger
+from anchore_engine.services.policy_engine.engine.policy.gates.deprecated.fileparse_passwd import ShellMatchTrigger
+from anchore_engine.services.policy_engine.engine.policy.gates.deprecated.fileparse_passwd import PEntryMatchTrigger
 
 
 class FileparsePasswordGateTest(GateUnitTest):

@@ -57,6 +57,7 @@ class LicenseBlacklistGate(Gate):
         """
         Load all of the various package types and their licenses into a list for easy checks.
 
+        :rtype:
         :param image_obj:
         :param context:
         :return:

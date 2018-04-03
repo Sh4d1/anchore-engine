@@ -20,9 +20,9 @@ SEVERITY_ORDERING = [
 ]
 
 
-class AttributeTrigger(BaseTrigger):
+class VulnerabilityMatchTrigger(BaseTrigger):
     __trigger_name__ = 'package'
-    __description__ = 'Triggers if a found vulnerability in an image meets the comparison criteria. Default severity comparison is =, but can be specified explicitly'
+    __description__ = 'Triggers if a found vulnerability in an image meets the comparison criteria.'
 
     SEVERITY_COMPARISONS = {
         '=': lambda x, y: x == y,
@@ -33,10 +33,10 @@ class AttributeTrigger(BaseTrigger):
         '>=': lambda x, y: x >= y
     }
 
-    package_type = EnumStringParameter(name='package_type', example_str='all', enum_values=['binary', 'all'], description='Only trigger for specific package type.', is_required=True)
-    severity = EnumStringParameter(name='severity', example_str='high', description='Severity to compare against', enum_values=SEVERITY_ORDERING, is_required=True, sort_order=1)
-    severity_comparison = EnumStringParameter(name='severity_comparison', example_str='>', description='The type of comparison to perform for severity evaluation. If unspecified, behavior is to use equality', enum_values=SEVERITY_COMPARISONS.keys(), is_required=False, related_to='directive, check_value', sort_order=2)
-    fix_available = BooleanStringParameter(name='fix_available', example_str='true', description='If present, the fix availability for the CVE record must match the value of this parameter.', is_required=False, sort_order=3)
+    package_type = EnumStringParameter(name='package_type', example_str='all', enum_values=['os', 'all'], description='Only trigger for specific package type.', is_required=True, sort_order=1)
+    severity_comparison = EnumStringParameter(name='severity_comparison', example_str='>', description='The type of comparison to perform for severity evaluation. If unspecified, behavior is to use equality', enum_values=SEVERITY_COMPARISONS.keys(), is_required=True, related_to='directive, check_value', sort_order=3)
+    severity = EnumStringParameter(name='severity', example_str='high', description='Severity to compare against', enum_values=SEVERITY_ORDERING, is_required=True, sort_order=3)
+    fix_available = BooleanStringParameter(name='fix_available', example_str='true', description='If present, the fix availability for the vulnerability record must match the value of this parameter.', is_required=False, sort_order=4)
 
     def evaluate(self, image_obj, context):
         vulns = context.data.get('loaded_vulnerabilities')
@@ -98,33 +98,37 @@ class FeedOutOfDateTrigger(BaseTrigger):
                     oldest_update = calendar.timegm(oldest_update.timetuple())
                     mintime = time.time() - int(int(self.max_age.value()) * 86400)
                     if oldest_update < mintime:
-                        self._fire(msg="FEEDOUTOFDATE The vulnerability feed for this image distro is older than MAXAGE ("+str(self.max_age.value())+") days")
+                        self._fire(msg="The vulnerability feed for this image distro is older than MAXAGE ("+str(self.max_age.value())+") days")
                 else:
                     self._fire(
-                        msg="FEEDOUTOFDATE The vulnerability feed for this image distro is older than MAXAGE (" + str(self.max_age.value()) + ") days")
+                        msg="The vulnerability feed for this image distro is older than MAXAGE (" + str(self.max_age.value()) + ") days")
             except Exception as err:
-                self._fire(msg="FEEDOUTOFDATE Cannot perform data feed up-to-date check - message from server: " + str(err))
+                self._fire(msg="Cannot perform data feed up-to-date check - message from server: " + str(err))
 
 
 class UnsupportedDistroTrigger(BaseTrigger):
-    __trigger_name__ = 'data_unavailable'
-    __description__ = 'triggers if a vulnerability scan cannot be run against the image due to lack of vulnerability feed data for the images distro'
+    __trigger_name__ = 'vulnerability_data_unavailable'
+    __description__ = "Triggers if vulnerability data is unavailable for the image's distro"
 
     def evaluate(self, image_obj, context):
         if not have_vulnerabilities_for(DistroNamespace.for_obj(image_obj)):
-            self._fire(msg="UNSUPPORTEDDISTRO cannot perform CVE scan: "+str(image_obj.distro_namespace))
+            self._fire(msg="Feed data unavailable, cannot perform CVE scan for distro: "+str(image_obj.distro_namespace))
 
 
-class AnchoreSecGate(Gate):
+class VulnerabilitiesGate(Gate):
     __gate_name__ = 'vulnerabilities'
-    __description__ = 'CVE/Vulnerability Checks'
+    __description__ = 'CVE/Vulnerability checks'
     __triggers__ = [
-        AttributeTrigger,
+        VulnerabilityMatchTrigger,
         FeedOutOfDateTrigger,
         UnsupportedDistroTrigger
     ]
 
     def prepare_context(self, image_obj, context):
+        """
+
+        :rtype:
+        """
         # Load the vulnerability info up front
         context.data['loaded_vulnerabilities'] = image_obj.vulnerabilities()
         return context

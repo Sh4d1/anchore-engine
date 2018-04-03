@@ -1,5 +1,5 @@
 from anchore_engine.services.policy_engine.engine.policy.gate import ExecutionContext
-from anchore_engine.services.policy_engine.engine.policy.gates.vulnerabilities import AnchoreSecGate, \
+from anchore_engine.services.policy_engine.engine.policy.gates.deprecated.anchoresec import AnchoreSecGate, \
     UnsupportedDistroTrigger, \
     FeedOutOfDateTrigger, \
     HighSeverityTrigger, \

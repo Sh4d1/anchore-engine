@@ -60,6 +60,7 @@ class SecretCheckGate(Gate):
         prepare the context by extracting the file name list once and placing it in the eval context to avoid repeated
         loads from the db. this is an optimization and could removed.
 
+        :rtype:
         :param image_obj:
         :param context:
         :return:

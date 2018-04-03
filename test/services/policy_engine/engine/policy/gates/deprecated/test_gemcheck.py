@@ -2,7 +2,7 @@ from test.services.policy_engine.engine.policy.gates import GateUnitTest
 from anchore_engine.services.policy_engine.engine.policy.gate import ExecutionContext
 from anchore_engine.db import get_thread_scoped_session, Image
 
-from anchore_engine.services.policy_engine.engine.policy.gates.gems import GemCheckGate, NotOfficialTrigger, NotLatestTrigger, NoFeedTrigger, BadVersionTrigger, BlacklistedGemTrigger, PkgNameMatchTrigger
+from anchore_engine.services.policy_engine.engine.policy.gates.deprecated.gem_check import GemCheckGate, NotOfficialTrigger, NotLatestTrigger, NoFeedTrigger, BadVersionTrigger, PkgFullMatchTrigger, PkgNameMatchTrigger
 
 
 class GemCheckGateTest(GateUnitTest):
@@ -58,7 +58,7 @@ class GemCheckGateTest(GateUnitTest):
         self.assertGreaterEqual(len(t.fired), 0)
 
     def test_pkgfullmatch(self):
-        t, gate, test_context = self.get_initialized_trigger(BlacklistedGemTrigger.__trigger_name__, blacklist_gemfullmatch='json|2.0.2,bundler|1.14.6,foo|1.0.0')
+        t, gate, test_context = self.get_initialized_trigger(PkgFullMatchTrigger.__trigger_name__, blacklist_gemfullmatch='json|2.0.2,bundler|1.14.6,foo|1.0.0')
         db = get_thread_scoped_session()
         db.refresh(self.test_image)
         test_context = gate.prepare_context(self.test_image, test_context)

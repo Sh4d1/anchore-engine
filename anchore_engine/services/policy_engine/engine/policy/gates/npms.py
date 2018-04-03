@@ -125,7 +125,10 @@ class PkgMatchTrigger(BaseTrigger):
         version = self.version.value(default_if_none=None)
 
         if name in pkgs:
-            if version and version in pkgs.get(name, []):
+            pkg_versions = pkgs.get(name)
+            if not pkg_versions:
+                pkg_versions = []
+            if version and version in pkg_versions:
                 self._fire(msg='NPM Package is blacklisted: ' + name + "-" + version)
             elif version is None:
                 self._fire(msg='NPM Package is blacklisted: ' + name)
@@ -161,6 +164,7 @@ class NpmCheckGate(Gate):
         def prepare_context(self, image_obj, context):
             """
             Prep the npm names and versions
+            :rtype: 
             :param image_obj:
             :param context:
             :return:

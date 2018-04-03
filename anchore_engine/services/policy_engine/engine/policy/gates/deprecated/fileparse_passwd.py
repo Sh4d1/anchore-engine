@@ -153,6 +153,7 @@ class FileparsePasswordGate(Gate):
 
         This is an optimization and could removed, but if removed the triggers should be updated to do the queries directly.
 
+        :rtype:
         :param image_obj:
         :param context:
         :return:

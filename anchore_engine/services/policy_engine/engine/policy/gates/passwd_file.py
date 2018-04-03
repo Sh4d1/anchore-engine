@@ -7,7 +7,7 @@ class FileNotStoredTrigger(BaseTrigger):
     __trigger_name__ = 'content_not_available'
     __description__ = 'Triggers if the /etc/passwd file is not present/stored in the evaluated image'
     __params__ = None
-    __msg__ = 'FILENOTSTORED Cannot locate /etc/passwd in image stored files archive: check analyzer settings'
+    __msg__ = 'Cannot locate /etc/passwd in image stored files archive: check analyzer settings'
 
     def evaluate(self, image_obj, context):
         if not context.data.get('passwd_entries'):
@@ -109,17 +109,17 @@ class ShellMatchTrigger(BaseTrigger, PentryBlacklistMixin):
 
 
 class PEntryMatchTrigger(BaseTrigger, PentryBlacklistMixin):
-    __trigger_name__ = 'blacklist_full_pentry'
+    __trigger_name__ = 'blacklist_full_entry'
     __description__ = 'Triggers if specified entire passwd entry is found in the /etc/passwd file'
 
-    pentry_blacklist = TriggerParameter(name='pentry', example_str='ftp:x:14:50:FTP User:/var/ftp:/sbin/nologin', description='Full pentry to match in /etc/passwd that will result in trigger firing if found', validator=TypeValidator('string'), is_required=True)
+    pentry_blacklist = TriggerParameter(name='entry', example_str='ftp:x:14:50:FTP User:/var/ftp:/sbin/nologin', description='Full pentry to match in /etc/passwd that will result in trigger firing if found', validator=TypeValidator('string'), is_required=True)
 
     def evaluate(self, image_obj, context):
         if not context.data.get('passwd_entries'):
             return
 
         user_entries = context.data.get('passwd_entries')
-        blacklisted = [x.strip() for x in self.pentry_blacklist.value()] if self.pentry_blacklist.value() else []
+        blacklisted = [self.pentry_blacklist.value().strip()]
 
         for pentry, pentry in self.exec_blacklist(blacklisted, None, user_entries):
             self._fire(msg="Blacklisted pentry '{}' found in image's /etc/passwd: pentry={}".format(pentry, str(pentry)))
@@ -146,6 +146,7 @@ class FileparsePasswordGate(Gate):
 
         This is an optimization and could removed, but if removed the triggers should be updated to do the queries directly.
 
+        :rtype:
         :param image_obj:
         :param context:
         :return:

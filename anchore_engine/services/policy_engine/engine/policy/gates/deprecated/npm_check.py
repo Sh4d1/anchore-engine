@@ -188,6 +188,7 @@ class NpmCheckGate(Gate):
     def prepare_context(self, image_obj, context):
         """
         Prep the npm names and versions
+        :rtype:
         :param image_obj:
         :param context:
         :return:

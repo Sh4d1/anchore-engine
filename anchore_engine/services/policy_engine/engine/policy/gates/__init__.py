@@ -4,7 +4,7 @@ from .dockerfile import DockerfileGate
 from .files import FileCheckGate
 from .passwd_file import FileparsePasswordGate
 from .packages import PackagesCheckGate
-from .vulnerabilities import AnchoreSecGate
+from .vulnerabilities import VulnerabilitiesGate
 from .licenses import LicensesGate
 from .gems import GemCheckGate
 from .npms import NpmCheckGate

@@ -336,6 +336,7 @@ class DockerfileGate(Gate):
         context.data['dockerfile']['RUN'] = ['RUN apt-get update', 'RUN blah']
         context.data['dockerfile']['VOLUME'] = ['VOLUME /tmp', 'VOLUMN /var/log']
         
+        :rtype:
         :return: updated context
         """
 

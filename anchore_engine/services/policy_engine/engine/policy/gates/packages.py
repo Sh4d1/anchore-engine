@@ -28,7 +28,10 @@ class VerifyTrigger(BaseTrigger):
     def evaluate(self, image_obj, context):
         pkg_names = self.pkgs.value(default_if_none=[])
         pkg_dirs = self.directories.value(default_if_none=[])
-        checks = [self.check_only.value(default_if_none=None)]
+        check = self.check_only.value()
+
+        if check:
+            check = getattr(self.VerificationStates, check)
 
         if image_obj.fs:
             extracted_files_json = image_obj.fs.files
@@ -53,7 +56,7 @@ class VerifyTrigger(BaseTrigger):
             for pkg_db_record in records:
                 status = self._diff_pkg_meta_and_file(pkg_db_record, extracted_files_json.get(pkg_db_record.file_path))
 
-                if status and (not checks or status.value in checks):
+                if status and (check is None or status == check):
                     self._fire(msg="VERIFY check against package db for package '{}' failed on entry '{}' with status: '{}'".format(pkg_name, pkg_db_record.file_path, status.value))
 
     @classmethod
@@ -131,77 +134,99 @@ class VerifyTrigger(BaseTrigger):
         return False
 
 
-class PkgNotPresentTrigger(BaseTrigger):
-    __trigger_name__ = 'require'
-    __description__ = 'Triggers if the package specified in the params are not installed in the container image. The name is not optional but the version and min_version values are optional to extend match logic'
+class RequiredPackageTrigger(BaseTrigger):
+    __trigger_name__ = 'required_package'
+    __description__ = 'Triggers if the specified package and optionally a specific version is not found in the image'
 
     pkg_name = TriggerParameter(name='name', example_str='libssl', description='Name of package that must be found installed in image', is_required=True, validator=TypeValidator('string'), sort_order=1)
-    pkg_version = TriggerParameter(name='version', example_str='1.10.3rc3', description='Version of package for exact version match', is_required=False, validator=TypeValidator('string'), sort_order=2)
-    min_version = TriggerParameter(name='minimum_version', example_str='0.0.9b', description='Minimum version that must be installed. Trigger fires if none or older version found.', is_required=False, validator=TypeValidator('string'), sort_order=3)
+    pkg_version = TriggerParameter(name='version', example_str='1.10.3rc3', description='Optional version of package for exact version match', is_required=False, validator=TypeValidator('string'), sort_order=2)
+    version_comparison = EnumStringParameter(name='version_match_type', example_str='exact',
+                                             enum_values=['exact', 'minimum'],
+                                             is_required=False,
+                                             description='The type of comparison to use for version if a version is provided',
+                                             sort_order=3)
 
     def evaluate(self, image_obj, context):
         name = self.pkg_name.value()
         version = self.pkg_version.value()
-        min_version = self.min_version.value()
+        comparison = self.version_comparison.value(default_if_none='exact')
 
-        if not name:
-            names = []
-            fullmatch = {}
-            namematch = []
-            vermatch = {}
-
-        else:
-            names = [name]
-            if version:
-                fullmatch = {name: version}
-            else:
-                fullmatch = {}
-
-            if min_version:
-                vermatch = {name: min_version}
+        found = False
 
         # Filter is possible since the lazy='dynamic' is set on the packages relationship in Image.
-        for img_pkg in image_obj.packages.filter(ImagePackage.name.in_(names)).all():
-            if img_pkg.name in fullmatch:
-                if img_pkg.fullversion != fullmatch.get(img_pkg.name):
-                    # Found but not right version
-                    self._fire(msg="PKGNOTPRESENT input package (" + str(img_pkg.name) + ") is present (" + str(
-                            img_pkg.fullversion) + "), but not at the version specified in policy (" + str(
-                            fullmatch[img_pkg.name]) + ")")
-                    fullmatch.pop(img_pkg.name)  # Assume only one version of a given package name is installed
-                else:
-                    # Remove it from the list
-                    fullmatch.pop(img_pkg.name)
+        for img_pkg in image_obj.packages.filter(ImagePackage.name == name).all():
+            if version is None:
+                found = True
+                break
+            elif comparison == 'exact':
+                if img_pkg.fullversion != version:
+                    self._fire(msg="Required input package (" + str(img_pkg.name) + ") is present (" + str(
+                        img_pkg.fullversion) + "), but not at the version specified in policy (" + str(name) + ")")
 
-            # Name match is sufficient
-            if img_pkg.name in namematch:
-                namematch.remove(img_pkg.name)
-
-            if img_pkg.name in vermatch:
-                if img_pkg.fullversion != vermatch[img_pkg.name]:
+                found = True
+                break
+            elif comparison == 'minimum':
+                if img_pkg.fullversion != version:
                     # Check if version is less than param value
-                    if compare_package_versions(img_pkg.distro_namespace_meta.flavor, img_pkg.name, img_pkg.version, img_pkg.name, vermatch[img_pkg.name]) < 0:
-                        self._fire(msg="PKGNOTPRESENT input package (" + str(img_pkg.name) + ") is present (" + str(
-                            img_pkg.fullversion) + "), but is lower version than what is specified in policy (" + str(
-                            vermatch[img_pkg.name]) + ")")
+                    if compare_package_versions(img_pkg.distro_namespace_meta.flavor, img_pkg.name, img_pkg.version,
+                                                img_pkg.name, version) < 0:
+                        self._fire(
+                            msg="Required min-version input package (" + str(img_pkg.name) + ") is present (" + str(
+                                img_pkg.fullversion) + "), but is lower version than what is specified in policy (" + str(
+                                version) + ")")
 
-                vermatch.pop(img_pkg.name)
+                # >=, so ok
+                found = True
+                break
 
-        # Any remaining
-        for pkg, version in fullmatch.items():
-            self._fire(msg="PKGNOTPRESENT input package (" + str(pkg) + "-" + str(version) + ") is not present in container image")
+        if not found:
+            if version and comparison != 'name_only':
+                self._fire(msg="Required input package ({},{}) is not present in container image".format(str(name), str(version)))
+            else:
+                self._fire(msg="Required input package ({}) is not present in container image".format(str(name)))
 
-        for pkg, version in vermatch.items():
-            self._fire(msg="PKGNOTPRESENT input package (" + str(pkg) + "-" + str(
-                version) + ") is not present in container image")
 
-        for pkg in namematch:
-            self._fire(msg="PKGNOTPRESENT input package (" + str(pkg) + ") is not present in container image")
+
+# class RequirePackageMinVersionTrigger(BaseTrigger):
+#     __trigger_name__ = 'required_package_minimum_version'
+#     __description__ = 'Triggers if the package specified in the params are not installed in the container image or does not have at least the specified version'
+#
+#     pkg_name = TriggerParameter(name='name', example_str='libssl', description='Name of package that must be found installed in image', is_required=True, validator=TypeValidator('string'), sort_order=1)
+#     min_version = TriggerParameter(name='version', example_str='0.0.9b', description='Minimum version that must be installed. Trigger fires if none or older version found.', is_required=True, validator=TypeValidator('string'), sort_order=2)
+#
+#     def evaluate(self, image_obj, context):
+#         name = self.pkg_name.value()
+#         min_version = self.min_version.value()
+#
+#         if not name:
+#             names = []
+#             vermatch = {}
+#
+#         else:
+#             names = [name]
+#             vermatch = {name: min_version}
+#
+#         # Filter is possible since the lazy='dynamic' is set on the packages relationship in Image.
+#         for img_pkg in image_obj.packages.filter(ImagePackage.name.in_(names)).all():
+#             if img_pkg.name in vermatch:
+#                 if img_pkg.fullversion != vermatch[img_pkg.name]:
+#                     # Check if version is less than param value
+#                     if compare_package_versions(img_pkg.distro_namespace_meta.flavor, img_pkg.name, img_pkg.version, img_pkg.name, vermatch[img_pkg.name]) < 0:
+#                         self._fire(msg="Required min-version input package (" + str(img_pkg.name) + ") is present (" + str(
+#                             img_pkg.fullversion) + "), but is lower version than what is specified in policy (" + str(
+#                             vermatch[img_pkg.name]) + ")")
+#
+#                 vermatch.pop(img_pkg.name)
+#
+#         # Any remaining
+#         for pkg, version in vermatch.items():
+#             self._fire(msg="Required min-version input package (" + str(pkg) + "-" + str(
+#                 version) + ") is not present in container image")
 
 
 class BlackListTrigger(BaseTrigger):
     __trigger_name__ = 'blacklist'
-    __description__ = 'triggers if the evaluated image has a package installed that matches the named package optionally with a specific version as well'
+    __description__ = 'Triggers if the evaluated image has a package installed that matches the named package optionally with a specific version as well'
 
     pkg_name = TriggerParameter(name='name', example_str='openssh-server', description="Package name to blacklist", sort_order=1, validator=TypeValidator('string'), is_required=True)
     pkg_version = TriggerParameter(name='version', example_str='1.0.1', description='Specific version of package to blacklist', validator=TypeValidator('string'), sort_order=2, is_required=False)
@@ -228,7 +253,7 @@ class PackagesCheckGate(Gate):
     __gate_name__ = 'packages'
     __description__ = 'Distro package checks'
     __triggers__ = [
-        PkgNotPresentTrigger,
+        RequiredPackageTrigger,
         VerifyTrigger,
         BlackListTrigger,
     ]

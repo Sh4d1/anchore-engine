@@ -49,7 +49,7 @@ class GateFailureTest(unittest.TestCase):
 
     def test_trigger_exec_failure(self):
         clazz = self.gate_clazz.get_trigger_named(ExposedPortsTrigger.__trigger_name__)
-        trigger = clazz(self.gate_clazz)
+        trigger = clazz(self.gate_clazz, ports='8088', type='whitelist')
         with self.assertRaises(TriggerEvaluationError) as f:
             trigger.execute(image_obj=None, context=None)
 
