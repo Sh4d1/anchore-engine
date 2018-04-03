@@ -1,13 +1,10 @@
-from anchore_engine.services.policy_engine.engine.policy.gate import Gate, BaseTrigger
+from anchore_engine.services.policy_engine.engine.policy.gate import Gate, BaseTrigger, LifecycleStates
 from anchore_engine.services.policy_engine.engine.policy.params import NameVersionStringListParameter, CommaDelimitedStringListParameter
 from anchore_engine.db import NpmMetadata
 from anchore_engine.services.policy_engine.engine.logs import get_logger
 from anchore_engine.services.policy_engine.engine.feeds import DataFeeds
-from anchore_engine.services.policy_engine.engine.policy.gates.util import deprecated_operation
 
 log = get_logger()
-
-# TODO; generalize these for any feed, with base classes and children per feed type
 
 FEED_KEY = 'npm'
 NPM_LISTING_KEY = 'npms'
@@ -15,6 +12,7 @@ NPM_MATCH_KEY = 'matched_feed_npms'
 
 
 class NotLatestTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'npmnotlatest'
     __description__ = 'triggers if an installed NPM is not the latest version according to NPM data feed'
 
@@ -42,6 +40,7 @@ class NotLatestTrigger(BaseTrigger):
 
 
 class NotOfficialTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'npmnotofficial'
     __description__ = 'triggers if an installed NPM is not in the official NPM database, according to NPM data feed'
 
@@ -70,6 +69,7 @@ class NotOfficialTrigger(BaseTrigger):
 
 
 class BadVersionTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'npmbadversion'
     __description__ = 'triggers if an installed NPM version is not listed in the official NPM feed as a valid version'
 
@@ -101,6 +101,7 @@ class BadVersionTrigger(BaseTrigger):
 
 
 class PkgFullMatchTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'npmpkgfullmatch'
     __description__ = 'triggers if the evaluated image has an NPM package installed that matches one in the list given as a param (package_name|vers)'
 
@@ -131,6 +132,7 @@ class PkgFullMatchTrigger(BaseTrigger):
 
 
 class PkgNameMatchTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'npmpkgnamematch'
     __description__ = 'triggers if the evaluated image has an NPM package installed that matches one in the list given as a param (package_name)'
 
@@ -153,6 +155,7 @@ class PkgNameMatchTrigger(BaseTrigger):
 
 
 class NoFeedTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'npmnofeed'
     __description__ = 'triggers if anchore does not have access to the NPM data feed'
 
@@ -167,36 +170,38 @@ class NoFeedTrigger(BaseTrigger):
         self._fire()
         return
 
-@deprecated_operation(superceded_by='npms')
+
 class NpmCheckGate(Gate):
-        __gate_name__ = 'npmcheck'
-        __description__ = 'NPM Checks'
-        __triggers__ = [
-            NotLatestTrigger,
-            NotOfficialTrigger,
-            BadVersionTrigger,
-            PkgFullMatchTrigger,
-            PkgNameMatchTrigger,
-            NoFeedTrigger
-        ]
+    __lifecycle_state__ = LifecycleStates.deprecated
+    __superceded_by__ = 'npms'
+    __gate_name__ = 'npmcheck'
+    __description__ = 'NPM Checks'
+    __triggers__ = [
+        NotLatestTrigger,
+        NotOfficialTrigger,
+        BadVersionTrigger,
+        PkgFullMatchTrigger,
+        PkgNameMatchTrigger,
+        NoFeedTrigger
+    ]
 
-        def prepare_context(self, image_obj, context):
-            """
-            Prep the npm names and versions
-            :param image_obj:
-            :param context:
-            :return:
-            """
+    def prepare_context(self, image_obj, context):
+        """
+        Prep the npm names and versions
+        :param image_obj:
+        :param context:
+        :return:
+        """
 
-            if not image_obj.npms:
-                return context
-
-            context.data[NPM_LISTING_KEY] = {p.name: p.versions_json for p in image_obj.npms}
-
-            npms = context.data[NPM_LISTING_KEY].keys()
-            context.data[NPM_MATCH_KEY] = []
-            chunks = [npms[i: i+100] for i in xrange(0, len(npms), 100)]
-            for key_range in chunks:
-                context.data[NPM_MATCH_KEY] += context.db.query(NpmMetadata).filter(NpmMetadata.name.in_(key_range)).all()
-
+        if not image_obj.npms:
             return context
+
+        context.data[NPM_LISTING_KEY] = {p.name: p.versions_json for p in image_obj.npms}
+
+        npms = context.data[NPM_LISTING_KEY].keys()
+        context.data[NPM_MATCH_KEY] = []
+        chunks = [npms[i: i+100] for i in xrange(0, len(npms), 100)]
+        for key_range in chunks:
+            context.data[NPM_MATCH_KEY] += context.db.query(NpmMetadata).filter(NpmMetadata.name.in_(key_range)).all()
+
+        return context

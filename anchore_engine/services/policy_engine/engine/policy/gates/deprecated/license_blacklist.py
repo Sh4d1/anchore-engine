@@ -1,9 +1,9 @@
 import re
-from anchore_engine.services.policy_engine.engine.policy.gate import Gate, BaseTrigger
+from anchore_engine.services.policy_engine.engine.policy.gate import Gate, BaseTrigger, LifecycleStates
 from anchore_engine.services.policy_engine.engine.policy.params import CommaDelimitedStringListParameter
-from anchore_engine.services.policy_engine.engine.policy.gates.util import deprecated_operation
 
 class FullMatchTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'licfullmatch'
     __description__ = 'triggers if the evaluated image has a package installed with software distributed under the specified (exact match) license(s)'
 
@@ -22,6 +22,7 @@ class FullMatchTrigger(BaseTrigger):
 
 
 class SubstringMatchTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'licsubmatch'
     __description__ = 'triggers if the evaluated image has a package installed with software distributed under the specified (substring match) license(s)'
 
@@ -42,8 +43,9 @@ class SubstringMatchTrigger(BaseTrigger):
                 msg='LICSUBMATCH Packages are installed that have blacklisted licenses: ' + ', '.join(matchpkgs))
 
 
-@deprecated_operation(superceded_by='licenses')
 class LicenseBlacklistGate(Gate):
+    __superceded_by__ = 'licenses'
+    __lifecycle_state__ = LifecycleStates.deprecated
     __gate_name__ = 'licblacklist'
     __description__ = 'Package License Blacklists'
     __triggers__ = [

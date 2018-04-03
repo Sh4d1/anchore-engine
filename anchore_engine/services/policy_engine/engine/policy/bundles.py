@@ -13,7 +13,7 @@ from anchore_engine.services.policy_engine.engine.policy.exceptions import Trigg
     TriggerEvaluationError, \
     TriggerNotFoundError, \
     GateEvaluationError, \
-    DeprecatedGateWarning, \
+    LifecycleWarning, \
     GateNotFoundError, \
     ParameterValueInvalidError, \
     InvalidParameterError, \
@@ -391,7 +391,7 @@ class EndOfLifedPolicyRule(PolicyRule):
 
     def __init__(self, policy_json=None):
         super(EndOfLifedPolicyRule, self).__init__(policy_json)
-        self.errors.append(DeprecatedGateWarning(self.gate_name))
+        self.errors.append(LifecycleWarning(self.gate_name))
         self.gate_cls = EndOfLifedPolicyRule.EOLedGate
 
     def execute(self, image_obj, exec_context):
@@ -430,7 +430,6 @@ class ExecutablePolicyRule(PolicyRule):
             raise self.error_exc
 
         try:
-
             try:
                 self.configured_trigger = selected_trigger_cls(parent_gate_cls=self.gate_cls, rule_id=self.rule_id, **self.trigger_params)
             except [TriggerNotFoundError, InvalidParameterError, ParameterValueInvalidError] as e:

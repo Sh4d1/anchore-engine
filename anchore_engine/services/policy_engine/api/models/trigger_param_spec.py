@@ -15,7 +15,7 @@ class TriggerParamSpec(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, name=None, description=None, example=None, required=None, is_deprecated=None, superceded_by=None, validator=None):  # noqa: E501
+    def __init__(self, name=None, description=None, example=None, required=None, state=None, superceded_by=None, validator=None):  # noqa: E501
         """TriggerParamSpec - a model defined in Swagger
 
         :param name: The name of this TriggerParamSpec.  # noqa: E501
@@ -26,8 +26,8 @@ class TriggerParamSpec(Model):
         :type example: str
         :param required: The required of this TriggerParamSpec.  # noqa: E501
         :type required: bool
-        :param is_deprecated: The is_deprecated of this TriggerParamSpec.  # noqa: E501
-        :type is_deprecated: bool
+        :param state: The state of this TriggerParamSpec.  # noqa: E501
+        :type state: str
         :param superceded_by: The superceded_by of this TriggerParamSpec.  # noqa: E501
         :type superceded_by: str
         :param validator: The validator of this TriggerParamSpec.  # noqa: E501
@@ -38,7 +38,7 @@ class TriggerParamSpec(Model):
             'description': str,
             'example': str,
             'required': bool,
-            'is_deprecated': bool,
+            'state': str,
             'superceded_by': str,
             'validator': object
         }
@@ -48,7 +48,7 @@ class TriggerParamSpec(Model):
             'description': 'description',
             'example': 'example',
             'required': 'required',
-            'is_deprecated': 'is_deprecated',
+            'state': 'state',
             'superceded_by': 'superceded_by',
             'validator': 'validator'
         }
@@ -57,7 +57,7 @@ class TriggerParamSpec(Model):
         self._description = description
         self._example = example
         self._required = required
-        self._is_deprecated = is_deprecated
+        self._state = state
         self._superceded_by = superceded_by
         self._validator = validator
 
@@ -163,27 +163,33 @@ class TriggerParamSpec(Model):
         self._required = required
 
     @property
-    def is_deprecated(self):
-        """Gets the is_deprecated of this TriggerParamSpec.
+    def state(self):
+        """Gets the state of this TriggerParamSpec.
 
-        True if this gate is deprecated  # noqa: E501
+        State of the trigger parameter  # noqa: E501
 
-        :return: The is_deprecated of this TriggerParamSpec.
-        :rtype: bool
+        :return: The state of this TriggerParamSpec.
+        :rtype: str
         """
-        return self._is_deprecated
+        return self._state
 
-    @is_deprecated.setter
-    def is_deprecated(self, is_deprecated):
-        """Sets the is_deprecated of this TriggerParamSpec.
+    @state.setter
+    def state(self, state):
+        """Sets the state of this TriggerParamSpec.
 
-        True if this gate is deprecated  # noqa: E501
+        State of the trigger parameter  # noqa: E501
 
-        :param is_deprecated: The is_deprecated of this TriggerParamSpec.
-        :type is_deprecated: bool
+        :param state: The state of this TriggerParamSpec.
+        :type state: str
         """
+        allowed_values = ["active", "deprecated", "eol"]  # noqa: E501
+        if state not in allowed_values:
+            raise ValueError(
+                "Invalid value for `state` ({0}), must be one of {1}"
+                .format(state, allowed_values)
+            )
 
-        self._is_deprecated = is_deprecated
+        self._state = state
 
     @property
     def superceded_by(self):

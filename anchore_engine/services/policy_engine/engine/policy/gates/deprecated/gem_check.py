@@ -1,4 +1,4 @@
-from anchore_engine.services.policy_engine.engine.policy.gate import Gate, BaseTrigger
+from anchore_engine.services.policy_engine.engine.policy.gate import Gate, BaseTrigger, LifecycleStates
 from anchore_engine.services.policy_engine.engine.policy.params import CommaDelimitedStringListParameter, NameVersionStringListParameter
 from anchore_engine.db import GemMetadata
 from anchore_engine.services.policy_engine.engine.logs import get_logger
@@ -7,13 +7,12 @@ from anchore_engine.services.policy_engine.engine.policy.gates.util import depre
 
 log = get_logger()
 
-# TODO; generalize these for any feed, with base classes and children per feed type
-
 FEED_KEY = 'gem'
 GEM_MATCH_KEY= 'matched_feed_gems'
 GEM_LIST_KEY = 'gems'
 
 class NotLatestTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'gemnotlatest'
     __description__ = 'triggers if an installed GEM is not the latest version according to GEM data feed'
 
@@ -41,6 +40,7 @@ class NotLatestTrigger(BaseTrigger):
 
 
 class NotOfficialTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'gemnotofficial'
     __description__ = 'triggers if an installed GEM is not in the official GEM database, according to GEM data feed'
 
@@ -69,6 +69,7 @@ class NotOfficialTrigger(BaseTrigger):
 
 
 class BadVersionTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'gembadversion'
     __description__ = 'triggers if an installed GEM version is not listed in the official GEM feed as a valid version'
 
@@ -100,11 +101,9 @@ class BadVersionTrigger(BaseTrigger):
 
 
 class PkgFullMatchTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'gempkgfullmatch'
     __description__ = 'triggers if the evaluated image has an GEM package installed that matches one in the list given as a param (package_name|vers)'
-    # __params__ = {
-    #     'BLACKLIST_GEMFULLMATCH': NameVersionListValidator()
-    # }
     fullmatch_blacklist = NameVersionStringListParameter(name='blacklist_gemfullmatch', description='List of name|version entries that are matched exactly for blacklist', is_required=False)
 
     def evaluate(self, image_obj, context):
@@ -132,11 +131,9 @@ class PkgFullMatchTrigger(BaseTrigger):
 
 
 class PkgNameMatchTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'gempkgnamematch'
     __description__ = 'triggers if the evaluated image has an GEM package installed that matches one in the list given as a param (package_name)'
-    #__params__ = {
-    #    'BLACKLIST_GEMNAMEMATCH': CommaDelimitedStringListValidator()
-    #}
     namematch_blacklist = CommaDelimitedStringListParameter(name='blacklist_gemnamematch', description='List of gem package names that are blacklisted and will cause trigger to fire if detected in image')
 
     def evaluate(self, image_obj, context):
@@ -157,6 +154,7 @@ class PkgNameMatchTrigger(BaseTrigger):
 
 
 class NoFeedTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ =  'gemnofeed'
     __description__ = 'triggers if anchore does not have access to the GEM data feed'
     __msg__ = "GEMNOFEED GEM packages are present but the anchore GEM feed is not available - will be unable to perform checks that require feed data"
@@ -173,38 +171,39 @@ class NoFeedTrigger(BaseTrigger):
         return
 
 
-@deprecated_operation(superceded_by='gems')
 class GemCheckGate(Gate):
-        __gate_name__ = "gemcheck"
-        __description__ = 'Ruby Gem Checks'
-        __triggers__ = [
-            NotLatestTrigger,
-            NotOfficialTrigger,
-            BadVersionTrigger,
-            PkgFullMatchTrigger,
-            PkgNameMatchTrigger,
-            NoFeedTrigger
-        ]
+    __superceded_by__ = 'gems'
+    __lifecycle_state__ = LifecycleStates.deprecated
+    __gate_name__ = "gemcheck"
+    __description__ = 'Ruby Gem Checks'
+    __triggers__ = [
+        NotLatestTrigger,
+        NotOfficialTrigger,
+        BadVersionTrigger,
+        PkgFullMatchTrigger,
+        PkgNameMatchTrigger,
+        NoFeedTrigger
+    ]
 
-        def prepare_context(self, image_obj, context):
-            """
-            Prep the gem names and versions
-            :param image_obj:
-            :param context:
-            :return:
-            """
+    def prepare_context(self, image_obj, context):
+        """
+        Prep the gem names and versions
+        :param image_obj:
+        :param context:
+        :return:
+        """
 
-            if not image_obj.gems:
-                return context
-
-            context.data[GEM_LIST_KEY] = {p.name: p.versions_json for p in image_obj.gems}
-            context.data[GEM_MATCH_KEY] = []
-            gems = context.data[GEM_LIST_KEY].keys()
-
-            # Use a chunked fetch approach to avoid a single large in() statement with 1000+ keys
-            chunks = [gems[i: i+100] for i in xrange(0, len(gems), 100)]
-            for key_range in chunks:
-                context.data[GEM_MATCH_KEY] += context.db.query(GemMetadata).filter(GemMetadata.name.in_(key_range)).all()
-
-
+        if not image_obj.gems:
             return context
+
+        context.data[GEM_LIST_KEY] = {p.name: p.versions_json for p in image_obj.gems}
+        context.data[GEM_MATCH_KEY] = []
+        gems = context.data[GEM_LIST_KEY].keys()
+
+        # Use a chunked fetch approach to avoid a single large in() statement with 1000+ keys
+        chunks = [gems[i: i+100] for i in xrange(0, len(gems), 100)]
+        for key_range in chunks:
+            context.data[GEM_MATCH_KEY] += context.db.query(GemMetadata).filter(GemMetadata.name.in_(key_range)).all()
+
+
+        return context

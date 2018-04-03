@@ -15,3 +15,6 @@ from .always import AlwaysGate
 # Bring in deprecated gates
 from .deprecated import *
 
+# Bring in eol'd gates
+from .eol import *
+

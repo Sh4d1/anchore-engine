@@ -64,7 +64,7 @@ class ParameterizedDockerfileModeBaseTrigger(BaseTrigger):
     Base class for any trigger that lets the user decide if it applies to only actual dockerfiles or not
     """
 
-    actual_dockerfile_only = BooleanStringParameter('actual_dockerfile_only', example_str='true', description='Only evaluate against a user-provided dockerfile, skip inferred/guessed. Default is False', is_required=False)
+    actual_dockerfile_only = BooleanStringParameter('actual_dockerfile_only', example_str='true', description='Only evaluate against a user-provided dockerfile, skip evaluation on inferred/guessed dockerfiles. Default is False', is_required=False)
 
     def evaluate(self, image_obj, context):
         if not hasattr(context, 'data') or not context.data.get('prepared_dockerfile'):
@@ -80,7 +80,7 @@ class ParameterizedDockerfileModeBaseTrigger(BaseTrigger):
 
 class EffectiveUserTrigger(DockerfileModeCheckedBaseTrigger):
     __trigger_name__ = 'effective_user'
-    __description__ = 'Triggers if the effective user for the container is either root when not allowed or is not in a whitelist'
+    __description__ = 'Checks if the effective user matches the provided user names and fires based on the allowed parameter. If allowed=true, the rule behaves as a whitelist, otherwise acts as a blacklist.'
 
     user = CommaDelimitedStringListParameter(name='users', example_str='root,docker', description='User names to check against as the effective user (last user entry) in the images history', is_required=True, validator=TypeValidator('string'), sort_order=1)
     allowed = BooleanStringParameter(name='allowed', is_required=True, sort_order=2)

@@ -1,14 +1,14 @@
 import re
-from anchore_engine.services.policy_engine.engine.policy.gate import Gate, BaseTrigger
+from anchore_engine.services.policy_engine.engine.policy.gate import Gate, BaseTrigger, LifecycleStates
 from anchore_engine.services.policy_engine.engine.logs import get_logger
 from anchore_engine.services.policy_engine.engine.policy.params import PipeDelimitedStringListValidator, PipeDelimitedStringListParameter
 from anchore_engine.db import AnalysisArtifact
-from anchore_engine.services.policy_engine.engine.policy.gates.util import deprecated_operation
 
 log = get_logger()
 
 
 class SecretContentMatchTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'contentmatch'
     __description__ = 'Triggers if the content search analyzer has found any matches.  If the parameter is set, then will only trigger against found matches that are also in the SECRETCHECK_CONTENTREGEXP parameter list.  If the parameter is absent or blank, then the trigger will fire if the analyzer found any matches.'
     secret_contentregexp = PipeDelimitedStringListParameter(name='secretcheck_contentregexp', description='Names of content regexps configured in the analyzer that should trigger if found in the image')
@@ -42,6 +42,7 @@ class SecretContentMatchTrigger(BaseTrigger):
 
 
 class SecretFilenameMatchTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'filenamematch'
     __description__ = 'Triggers if a file exists in the container that matches with any of the regular expressions given as SECRETCHECK_NAMEREGEXP parameters.'
     name_regexps = PipeDelimitedStringListParameter(name='secretcheck_nameregexp', description='List of regexp names in the analyzer that should trigger if matched in the image')
@@ -64,8 +65,10 @@ class SecretFilenameMatchTrigger(BaseTrigger):
                 if re.match(regexp, thefile):
                     self._fire(msg='Application of regexp matched file found in container: file={} regexp={}'.format(thefile, regexp))
 
-@deprecated_operation(superceded_by='secrets')
+
 class SecretCheckGate(Gate):
+    __superceded_by__ = 'secret_scans'
+    __lifecycle_state__ = LifecycleStates.deprecated
     __gate_name__ = 'secretcheck'
     __description__ = 'Checks for Secrets Found in the Image'
     __triggers__ = [

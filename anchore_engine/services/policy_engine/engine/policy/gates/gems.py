@@ -14,7 +14,7 @@ GEM_LIST_KEY = 'gems'
 
 
 class NotLatestTrigger(BaseTrigger):
-    __trigger_name__ = 'newer_version_in_feed'
+    __trigger_name__ = 'newer_version_found_in_feed'
     __description__ = 'Triggers if an installed GEM is not the latest version according to GEM data feed'
 
     def evaluate(self, image_obj, context):
@@ -37,11 +37,11 @@ class NotLatestTrigger(BaseTrigger):
 
             for v in versions:
                 if v and v != feed_names.get(gem):
-                    self._fire("GEMNOTLATEST Package ("+gem+") version ("+v+") installed but is not the latest version ("+feed_names[gem]['latest']+")")
+                    self._fire("Package ("+gem+") version ("+v+") installed but is not the latest version ("+feed_names[gem]['latest']+")")
 
 
 class NotOfficialTrigger(BaseTrigger):
-    __trigger_name__ = 'unknown_in_feeds'
+    __trigger_name__ = 'not_found_in_feed'
     __description__ = 'Triggers if an installed GEM is not in the official GEM database, according to GEM data feed'
 
     def evaluate(self, image_obj, context):
@@ -69,7 +69,7 @@ class NotOfficialTrigger(BaseTrigger):
 
 
 class BadVersionTrigger(BaseTrigger):
-    __trigger_name__ = 'version_not_in_feeds'
+    __trigger_name__ = 'version_not_found_in_feed'
     __description__ = 'Triggers if an installed GEM version is not listed in the official GEM feed as a valid version'
 
     def evaluate(self, image_obj, context):
@@ -104,7 +104,7 @@ class BlacklistedGemTrigger(BaseTrigger):
     __description__ = 'Triggers if the evaluated image has an GEM package installed that matches one in the list given as a param (package_name|vers)'
 
     name = TriggerParameter(validator=TypeValidator('string'), name='name', is_required=True, description='Gem name to blacklist', example_str='time_diff', sort_order=1)
-    version = TriggerParameter(validator=TypeValidator('string'), name='version', is_required=False, description='Version to blacklist specifically', example_str='0.2.9', sort_order=2)
+    version = TriggerParameter(validator=TypeValidator('string'), name='version', is_required=False, description='Optional version to blacklist specifically', example_str='0.2.9', sort_order=2)
 
     def evaluate(self, image_obj, context):
         """
@@ -134,7 +134,7 @@ class BlacklistedGemTrigger(BaseTrigger):
 class NoFeedTrigger(BaseTrigger):
     __trigger_name__ = 'feed_data_unavailable'
     __description__ = 'Triggers if anchore does not have access to the GEM data feed'
-    __msg__ = "GEMNOFEED GEM packages are present but the anchore GEM feed is not available - will be unable to perform checks that require feed data"
+    __msg__ = "Gem packages are present but the anchore gem feed is not available - will be unable to perform checks that require feed data"
 
     def evaluate(self, image_obj, context):
         try:

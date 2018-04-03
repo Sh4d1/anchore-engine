@@ -1636,13 +1636,16 @@ definitions:
       description:
         type: string
         description: Description of the gate
-      is_deprecated:
-        type: boolean
-        description: True if this trigger is deprecated
+      state:
+        type: string
+        description: State of the gate and transitively all triggers it contains if not 'active'
+        enum:
+        - active
+        - deprecated
+        - eol
       superceded_by:
         type: string
         description: The name of another trigger that supercedes this on functionally if this is deprecated
-
       triggers:
         type: array
         description: List of the triggers that can fire for this Gate
@@ -1658,9 +1661,13 @@ definitions:
       description:
         type: string
         description: Trigger description for what it tests and when it will fire during evaluation
-      is_deprecated:
-        type: boolean
-        description: True if this trigger is deprecated
+      state:
+        type: string
+        description: State of the trigger
+        enum:
+        - active
+        - deprecated
+        - eol
       superceded_by:
         type: string
         description: The name of another trigger that supercedes this on functionally if this is deprecated
@@ -1680,9 +1687,13 @@ definitions:
       example:
         type: string
         description: An example value for the parameter (encoded as a string if the parameter is an object or list type)
-      is_deprecated:
-        type: boolean
-        description: True if this trigger is deprecated
+      state:
+        type: string
+        description: State of the trigger parameter
+        enum:
+        - active
+        - deprecated
+        - eol
       superceded_by:
         type: string
         description: The name of another trigger that supercedes this on functionally if this is deprecated

@@ -16,15 +16,15 @@ class GateSpec(Model):
     Do not edit the class manually.
     """
 
-    def __init__(self, name=None, description=None, is_deprecated=None, superceded_by=None, triggers=None):  # noqa: E501
+    def __init__(self, name=None, description=None, state=None, superceded_by=None, triggers=None):  # noqa: E501
         """GateSpec - a model defined in Swagger
 
         :param name: The name of this GateSpec.  # noqa: E501
         :type name: str
         :param description: The description of this GateSpec.  # noqa: E501
         :type description: str
-        :param is_deprecated: The is_deprecated of this GateSpec.  # noqa: E501
-        :type is_deprecated: bool
+        :param state: The state of this GateSpec.  # noqa: E501
+        :type state: str
         :param superceded_by: The superceded_by of this GateSpec.  # noqa: E501
         :type superceded_by: str
         :param triggers: The triggers of this GateSpec.  # noqa: E501
@@ -33,7 +33,7 @@ class GateSpec(Model):
         self.swagger_types = {
             'name': str,
             'description': str,
-            'is_deprecated': bool,
+            'state': str,
             'superceded_by': str,
             'triggers': List[TriggerSpec]
         }
@@ -41,14 +41,14 @@ class GateSpec(Model):
         self.attribute_map = {
             'name': 'name',
             'description': 'description',
-            'is_deprecated': 'is_deprecated',
+            'state': 'state',
             'superceded_by': 'superceded_by',
             'triggers': 'triggers'
         }
 
         self._name = name
         self._description = description
-        self._is_deprecated = is_deprecated
+        self._state = state
         self._superceded_by = superceded_by
         self._triggers = triggers
 
@@ -110,27 +110,33 @@ class GateSpec(Model):
         self._description = description
 
     @property
-    def is_deprecated(self):
-        """Gets the is_deprecated of this GateSpec.
+    def state(self):
+        """Gets the state of this GateSpec.
 
-        True if this gate is deprecated  # noqa: E501
+        State of the gate, applied transitively to all triggers if a state other than active  # noqa: E501
 
-        :return: The is_deprecated of this GateSpec.
-        :rtype: bool
+        :return: The state of this GateSpec.
+        :rtype: str
         """
-        return self._is_deprecated
+        return self._state
 
-    @is_deprecated.setter
-    def is_deprecated(self, is_deprecated):
-        """Sets the is_deprecated of this GateSpec.
+    @state.setter
+    def state(self, state):
+        """Sets the state of this GateSpec.
 
-        True if this gate is deprecated  # noqa: E501
+        State of the gate, applied transitively to all triggers if a state other than active  # noqa: E501
 
-        :param is_deprecated: The is_deprecated of this GateSpec.
-        :type is_deprecated: bool
+        :param state: The state of this GateSpec.
+        :type state: str
         """
+        allowed_values = ["active", "deprecated", "eol"]  # noqa: E501
+        if state not in allowed_values:
+            raise ValueError(
+                "Invalid value for `state` ({0}), must be one of {1}"
+                .format(state, allowed_values)
+            )
 
-        self._is_deprecated = is_deprecated
+        self._state = state
 
     @property
     def superceded_by(self):

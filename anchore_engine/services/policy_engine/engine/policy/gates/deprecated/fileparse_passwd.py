@@ -1,10 +1,10 @@
-from anchore_engine.services.policy_engine.engine.policy.gate import Gate, BaseTrigger
-from anchore_engine.services.policy_engine.engine.policy.gates.util import deprecated_operation
+from anchore_engine.services.policy_engine.engine.policy.gate import Gate, BaseTrigger, LifecycleStates
 from anchore_engine.services.policy_engine.engine.policy.params import CommaDelimitedNumberListParameter, CommaDelimitedStringListParameter, PipeDelimitedStringListParameter
 from anchore_engine.db import AnalysisArtifact
 
 
 class FileNotStoredTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'filenotstored'
     __description__ = 'triggers if the /etc/passwd file is not present/stored in the evaluated image'
     __params__ = None
@@ -39,6 +39,7 @@ class PentryBlacklistMixin(object):
 
 
 class UsernameMatchTrigger(BaseTrigger, PentryBlacklistMixin):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'usernamematch'
     __description__ = 'triggers if specified username is found in the /etc/passwd file'
 
@@ -56,6 +57,7 @@ class UsernameMatchTrigger(BaseTrigger, PentryBlacklistMixin):
 
 
 class UserIdMatchTrigger(BaseTrigger, PentryBlacklistMixin):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'useridmatch'
     __description__ = 'triggers if specified user id is found in the /etc/passwd file'
 
@@ -73,6 +75,7 @@ class UserIdMatchTrigger(BaseTrigger, PentryBlacklistMixin):
 
 
 class GroupIdMatchTrigger(BaseTrigger, PentryBlacklistMixin):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'groupidmatch'
     __description__ = 'triggers if specified group id is found in the /etc/passwd file'
 
@@ -90,6 +93,7 @@ class GroupIdMatchTrigger(BaseTrigger, PentryBlacklistMixin):
 
 
 class ShellMatchTrigger(BaseTrigger, PentryBlacklistMixin):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'shellmatch'
     __description__ = 'triggers if specified login shell for any user is found in the /etc/passwd file'
 
@@ -109,6 +113,7 @@ class ShellMatchTrigger(BaseTrigger, PentryBlacklistMixin):
 
 
 class PEntryMatchTrigger(BaseTrigger, PentryBlacklistMixin):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'pentrymatch'
     __description__ = 'triggers if specified entire passwd entry is found in the /etc/passwd file'
 
@@ -127,8 +132,9 @@ class PEntryMatchTrigger(BaseTrigger, PentryBlacklistMixin):
         return
 
 
-@deprecated_operation(superceded_by='passwd_file')
 class FileparsePasswordGate(Gate):
+    __lifecycle_state__ = LifecycleStates.deprecated
+    __superceded_by__ = 'passwd_file'
     __gate_name__ = 'fileparse_passwd'
     __description__ = 'Password File Content Checks'
     __triggers__ = [

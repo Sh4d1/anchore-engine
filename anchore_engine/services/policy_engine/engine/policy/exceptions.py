@@ -192,12 +192,15 @@ class GateEvaluationError(EvaluationError):
         self.gate = gate_name
 
 
-class DeprecatedGateWarning(GateEvaluationError):
+class LifecycleWarning(GateEvaluationError):
     severity = 'warn'
 
-    def __init__(self, gate_name):
-        super(DeprecatedGateWarning, self).__init__(gate_name, 'Gate {} is deprecated and was not evaluated. Should be removed from policy'.format(gate_name))
+    def __init__(self, gate_name, state, trigger_name=None, superceded=None):
+        super(LifecycleWarning, self).__init__(gate_name, 'Policy rule contains gate/trigger that is no longer active: {}/{}, but in state {}, and was not evaluated. It should be removed from policies and optionally replaced with {}'.format(gate_name, trigger_name, state, superceded))
         self.gate_name = gate_name
+        self.trigger_nane = trigger_name
+        self.state = state
+        self.superceded_by = superceded
 
 
 class ParameterValueInvalidError(PolicyRuleValidationError):

@@ -29,6 +29,8 @@ from anchore_engine.services.policy_engine.engine.vulnerabilities import vulnera
 from anchore_engine.services.policy_engine.engine.feeds import get_selected_feeds_to_sync
 from anchore_engine.db import DistroNamespace
 from anchore_engine.subsys import logger as log
+
+# Leave this here to ensure gates registry is fully loaded
 from anchore_engine.services.policy_engine.engine.policy import gates
 
 TABLE_STYLE_HEADER_LIST = ['CVE_ID', 'Severity', '*Total_Affected', 'Vulnerable_Package', 'Fix_Available', 'Fix_Images', 'Rebuild_Images', 'URL']
@@ -490,10 +492,10 @@ def describe_policy():
             else:
                 g.superceded_by = None
 
-            if hasattr(v, '__is_deprecated__'):
-                g.is_deprecated = v.__is_deprecated__
+            if hasattr(v, '__lifecycle_state__'):
+                g.state = v.__lifecycle_state__.name
             else:
-                g.is_deprecated = False
+                g.state = 'active'
 
             for t in v.__triggers__:
                 tr = TriggerSpec()
@@ -504,10 +506,10 @@ def describe_policy():
                     tr.superceded_by = t.__superceded_by__
                 else:
                     tr.superceded_by = None
-                if hasattr(t, '__is_deprecated__'):
-                    tr.is_deprecated = t.__is_deprecated__
+                if hasattr(t, '__lifecycle_state__'):
+                    tr.state = t.__lifecycle_state__.name
                 else:
-                    tr.is_deprecated = False
+                    tr.state = 'active'
 
                 params = t._parameters()
                 if params:
@@ -524,16 +526,18 @@ def describe_policy():
                         else:
                             tps.superceded_by = None
 
-                        if hasattr(param, '__is_deprecated__'):
-                            tps.is_deprecated = param.__is_deprecated__
+                        if hasattr(param, '__lifecycle_state__'):
+                            tps.state = param.__lifecycle_state__.name
                         else:
-                            tps.is_deprecated = False
+                            tps.state = 'active'
 
                         tr.parameters.append(tps)
 
                 g.triggers.append(tr)
 
             doc.append(g.to_dict())
+
+            doc = sorted(doc, key=lambda x: x['state'])
 
         return doc, 200
 

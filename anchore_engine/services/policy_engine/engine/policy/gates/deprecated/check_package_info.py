@@ -1,16 +1,16 @@
 import enum
-from anchore_engine.services.policy_engine.engine.policy.gate import BaseTrigger, Gate
+from anchore_engine.services.policy_engine.engine.policy.gate import BaseTrigger, Gate, LifecycleStates
 from anchore_engine.services.policy_engine.engine.policy.params import NameVersionStringListParameter, \
     CommaDelimitedStringListParameter
 from anchore_engine.db import ImagePackage, ImagePackageManifestEntry
 from anchore_engine.services.policy_engine.engine.util.packages import compare_package_versions
 from anchore_engine.services.policy_engine.engine.logs import get_logger
-from anchore_engine.services.policy_engine.engine.policy.gates.util import deprecated_operation
 
 log = get_logger()
 
 
 class VerifyTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'verify'
     __description__ = 'Check package integrity against package db in in the image. Triggers for changes or removal or content in all or the selected DIRS param if provided, and can filter type of check with the CHECK_ONLY param'
 
@@ -134,6 +134,7 @@ class VerifyTrigger(BaseTrigger):
 
 
 class PkgNotPresentTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'pkgnotpresent'
     __description__ = 'triggers if the package(s) specified in the params are not installed in the container image. The parameters specify different types of matches.',
 
@@ -189,13 +190,12 @@ class PkgNotPresentTrigger(BaseTrigger):
             self._fire(msg="PKGNOTPRESENT input package (" + str(pkg) + ") is not present in container image")
 
 
-@deprecated_operation(superceded_by='packages')
 class PackageCheckGate(Gate):
     __gate_name__ = 'pkgcheck'
     __description__ = 'Distro package checks'
+    __lifecycle_state__ = LifecycleStates.deprecated
+    __superceded_by__ = 'packages'
     __triggers__ = [
         PkgNotPresentTrigger,
         VerifyTrigger
     ]
-    __is_deprecated__ = True
-    __superceded_by__ = 'packages'

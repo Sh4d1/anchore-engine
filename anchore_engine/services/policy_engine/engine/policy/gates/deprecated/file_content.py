@@ -1,7 +1,7 @@
 import re
 import stat
 from anchore_engine.services.policy_engine.engine.policy.gates.util import deprecated_operation
-from anchore_engine.services.policy_engine.engine.policy.gate import Gate, BaseTrigger
+from anchore_engine.services.policy_engine.engine.policy.gate import Gate, BaseTrigger, LifecycleStates
 from anchore_engine.services.policy_engine.engine.logs import get_logger
 from anchore_engine.services.policy_engine.engine.policy.params import PipeDelimitedStringListParameter
 from anchore_engine.db import AnalysisArtifact
@@ -90,10 +90,11 @@ class SuidCheckTrigger(BaseTrigger):
             self._fire(msg='SUID or SGID found set on file {}. Mode: {}'.format(path, oct(entry.get('mode'))))
 
 
-@deprecated_operation(superceded_by='files')
 class FileCheckGate(Gate):
     __gate_name__ = 'filecheck'
     __description__ = 'Image File Checks'
+    __superceded_by__ = 'files'
+    __lifecycle_state__ = LifecycleStates.deprecated
     __triggers__ = [
         ContentMatchTrigger,
         FilenameMatchTrigger,

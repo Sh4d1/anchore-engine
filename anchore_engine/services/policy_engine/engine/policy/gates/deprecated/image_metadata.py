@@ -1,14 +1,14 @@
 import re
-from anchore_engine.services.policy_engine.engine.policy.gate import BaseTrigger, Gate
+from anchore_engine.services.policy_engine.engine.policy.gate import BaseTrigger, Gate, LifecycleStates
 from anchore_engine.services.policy_engine.engine.policy.gates.util import CheckOperation
 from anchore_engine.services.policy_engine.engine.policy.params import EnumStringParameter, TypeValidator, TriggerParameter
 from anchore_engine.services.policy_engine.engine.logs import get_logger
-from anchore_engine.services.policy_engine.engine.policy.gates.util import deprecated_operation
 
 log = get_logger()
 
 
 class ImageMetadataAttributeCheckTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'attributecheck'
     __description__ = 'triggers if a named image attribute matches the given condition'
 
@@ -65,8 +65,9 @@ class ImageMetadataAttributeCheckTrigger(BaseTrigger):
         if self.__ops__.get(check).eval_function(img_val, rval):
             self._fire(msg="Attribute check for attribute: '{}' check: '{}' check_value: '{}' matched image value: '{}'".format(attr, check, (str(rval) if rval is not None else ''), img_val))
 
-@deprecated_operation(superceded_by='image_metadata')
 class ImageMetadataGate(Gate):
+    __lifecycle_state__ = LifecycleStates.deprecated
+    __superceded_by__ = 'metadata'
     __gate_name__ = 'metadatacheck'
     __description__ = 'Check Image Metadata'
 

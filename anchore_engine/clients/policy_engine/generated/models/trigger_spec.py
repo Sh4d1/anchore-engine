@@ -35,7 +35,7 @@ class TriggerSpec(object):
     swagger_types = {
         'name': 'str',
         'description': 'str',
-        'is_deprecated': 'bool',
+        'state': 'str',
         'superceded_by': 'str',
         'parameters': 'list[TriggerParamSpec]'
     }
@@ -43,17 +43,17 @@ class TriggerSpec(object):
     attribute_map = {
         'name': 'name',
         'description': 'description',
-        'is_deprecated': 'is_deprecated',
+        'state': 'state',
         'superceded_by': 'superceded_by',
         'parameters': 'parameters'
     }
 
-    def __init__(self, name=None, description=None, is_deprecated=None, superceded_by=None, parameters=None):  # noqa: E501
+    def __init__(self, name=None, description=None, state=None, superceded_by=None, parameters=None):  # noqa: E501
         """TriggerSpec - a model defined in Swagger"""  # noqa: E501
 
         self._name = None
         self._description = None
-        self._is_deprecated = None
+        self._state = None
         self._superceded_by = None
         self._parameters = None
         self.discriminator = None
@@ -62,8 +62,8 @@ class TriggerSpec(object):
             self.name = name
         if description is not None:
             self.description = description
-        if is_deprecated is not None:
-            self.is_deprecated = is_deprecated
+        if state is not None:
+            self.state = state
         if superceded_by is not None:
             self.superceded_by = superceded_by
         if parameters is not None:
@@ -116,27 +116,33 @@ class TriggerSpec(object):
         self._description = description
 
     @property
-    def is_deprecated(self):
-        """Gets the is_deprecated of this TriggerSpec.  # noqa: E501
+    def state(self):
+        """Gets the state of this TriggerSpec.  # noqa: E501
 
-        True if this trigger is deprecated  # noqa: E501
+        State of the trigger  # noqa: E501
 
-        :return: The is_deprecated of this TriggerSpec.  # noqa: E501
-        :rtype: bool
+        :return: The state of this TriggerSpec.  # noqa: E501
+        :rtype: str
         """
-        return self._is_deprecated
+        return self._state
 
-    @is_deprecated.setter
-    def is_deprecated(self, is_deprecated):
-        """Sets the is_deprecated of this TriggerSpec.
+    @state.setter
+    def state(self, state):
+        """Sets the state of this TriggerSpec.
 
-        True if this trigger is deprecated  # noqa: E501
+        State of the trigger  # noqa: E501
 
-        :param is_deprecated: The is_deprecated of this TriggerSpec.  # noqa: E501
-        :type: bool
+        :param state: The state of this TriggerSpec.  # noqa: E501
+        :type: str
         """
+        allowed_values = ["active", "deprecated", "eol"]  # noqa: E501
+        if state not in allowed_values:
+            raise ValueError(
+                "Invalid value for `state` ({0}), must be one of {1}"  # noqa: E501
+                .format(state, allowed_values)
+            )
 
-        self._is_deprecated = is_deprecated
+        self._state = state
 
     @property
     def superceded_by(self):

@@ -1,13 +1,13 @@
-from anchore_engine.services.policy_engine.engine.policy.gate import Gate, BaseTrigger
+from anchore_engine.services.policy_engine.engine.policy.gate import Gate, BaseTrigger, LifecycleStates
 from anchore_engine.services.policy_engine.engine.policy.params import NameVersionStringListParameter, CommaDelimitedStringListParameter
 from anchore_engine.db import ImagePackage
 from anchore_engine.services.policy_engine.engine.logs import get_logger
-from anchore_engine.services.policy_engine.engine.policy.gates.util import deprecated_operation
 
 log = get_logger()
 
 
 class FullMatchTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'pkgfullmatch'
     __description__ = 'triggers if the evaluated image has a package installed that matches one in the list given as a param (package_name|vers)'
     fullmatch_blacklist = NameVersionStringListParameter(name='blacklist_fullmatch', description='List of package name|version pairs for exact match')
@@ -26,6 +26,7 @@ class FullMatchTrigger(BaseTrigger):
 
 
 class NameMatchTrigger(BaseTrigger):
+    __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'pkgnamematch'
     __description__ = 'triggers if the evaluated image has a package installed that matches one in the list given as a param (package_name)'
     namematch_blacklist = CommaDelimitedStringListParameter(name='blacklist_namematch', description='List of package names to be blacklisted')
@@ -41,8 +42,10 @@ class NameMatchTrigger(BaseTrigger):
                 log.exception('Error searching packages for blacklisted names')
                 pass
 
-@deprecated_operation(superceded_by='packages')
+
 class PackageBlacklistGate(Gate):
+    __lifecycle_state__ = LifecycleStates.deprecated
+    __superceded_by__ = 'packages'
     __gate_name__ = 'pkgblacklist'
     __description__ = 'Distro Package Blacklists'
     __triggers__ = [

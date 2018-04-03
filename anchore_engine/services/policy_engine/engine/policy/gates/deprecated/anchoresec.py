@@ -2,12 +2,12 @@ import calendar
 import time
 
 from anchore_engine.services.policy_engine.engine.feeds import DataFeeds
-from anchore_engine.services.policy_engine.engine.policy.gate import Gate, BaseTrigger
+from anchore_engine.services.policy_engine.engine.policy.gate import Gate, BaseTrigger, LifecycleStates
 from anchore_engine.services.policy_engine.engine.vulnerabilities import have_vulnerabilities_for
 from anchore_engine.db import DistroNamespace
 from anchore_engine.services.policy_engine.engine.logs import get_logger
 from anchore_engine.services.policy_engine.engine.policy.params import BooleanStringParameter, IntegerStringParameter
-from anchore_engine.services.policy_engine.engine.policy.gates.util import deprecated_operation
+
 log = get_logger()
 
 
@@ -47,35 +47,41 @@ class LowSeverityTrigger(CveSeverityTrigger):
     __trigger_name__ = 'vulnlow'
     __description__ = 'triggers if a vulnerability of LOW severity is found, along with a named package'
     __vuln_levels__ = ['Low']
+    __lifecycle_state__ = LifecycleStates.deprecated
 
 
 class MediumSeverityTrigger(CveSeverityTrigger):
     __trigger_name__ = 'vulnmedium'
     __description__ = 'triggers if a vulnerability of MEDIUM severity is found, along with a named package'
     __vuln_levels__ = ['Medium']
+    __lifecycle_state__ = LifecycleStates.deprecated
 
 
 class HighSeverityTrigger(CveSeverityTrigger):
     __trigger_name__ = 'vulnhigh'
     __description__ = 'triggers if a vulnerability of HIGH severity is found, along with a named package'
     __vuln_levels__ = ['High']
+    __lifecycle_state__ = LifecycleStates.deprecated
 
 
 class CriticalSeverityTrigger(CveSeverityTrigger):
     __trigger_name__ = 'vulncritical'
     __description__ = 'triggers if a vulnerability of CRITICAL severity is found, along with a named package'
     __vuln_levels__ = ['Critical']
+    __lifecycle_state__ = LifecycleStates.deprecated
 
 
 class UnknownSeverityTrigger(CveSeverityTrigger):
     __trigger_name__ = 'vulnunknown'
     __description__ = 'triggers if a vulnerability of UNKNOWN severity is found, along with a named package'
     __vuln_levels__ = ['Unknown', 'Negligible', None]
+    __lifecycle_state__ = LifecycleStates.deprecated
 
 
 class FeedOutOfDateTrigger(BaseTrigger):
     __trigger_name__ = 'feedoutofdate'
     __description__ = 'triggers if the CVE data is older than the window specified by the parameter MAXAGE (unit is number of days)'
+    __lifecycle_state__ = LifecycleStates.deprecated
     max_age = IntegerStringParameter(name='maxage', description='Fire the trigger if the last sync was more than this number of days ago', is_required=True)
 
     def evaluate(self, image_obj, context):
@@ -110,16 +116,18 @@ class FeedOutOfDateTrigger(BaseTrigger):
 class UnsupportedDistroTrigger(BaseTrigger):
     __trigger_name__ = 'unsupporteddistro'
     __description__ = 'triggers if a vulnerability scan cannot be run against the image due to lack of vulnerability feed data for the images distro'
+    __lifecycle_state__ = LifecycleStates.deprecated
 
     def evaluate(self, image_obj, context):
         if not have_vulnerabilities_for(DistroNamespace.for_obj(image_obj)):
             self._fire(msg="UNSUPPORTEDDISTRO cannot perform CVE scan: "+str(image_obj.distro_namespace))
 
 
-@deprecated_operation(superceded_by='vulnerabilities')
 class AnchoreSecGate(Gate):
     __gate_name__ = 'anchoresec'
     __description__ = 'CVE/Vulnerability Checks'
+    __lifecycle_state__ = LifecycleStates.deprecated
+    __superceded_by__ = 'vulnerabilities'
 
     __triggers__ = [
         LowSeverityTrigger,
