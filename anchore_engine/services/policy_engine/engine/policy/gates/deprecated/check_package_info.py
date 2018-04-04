@@ -14,9 +14,9 @@ class VerifyTrigger(BaseTrigger):
     __trigger_name__ = 'verify'
     __description__ = 'Check package integrity against package db in in the image. Triggers for changes or removal or content in all or the selected DIRS param if provided, and can filter type of check with the CHECK_ONLY param'
 
-    pkgs = CommaDelimitedStringListParameter(name='pkgs', description='List of package names to verify', is_required=False)
-    directories = CommaDelimitedStringListParameter(name='dirs', description='List of directories to limit checks to so as to avoid checks on all dir', is_required=False)
-    check_only = CommaDelimitedStringListParameter(name='check_only', description='List of types of checks to perform instead of all', is_required=False)
+    pkgs = CommaDelimitedStringListParameter(name='pkgs', description='List of package names to verify', example_str='libssl,openssl,curl', is_required=False)
+    directories = CommaDelimitedStringListParameter(name='dirs', description='List of directories to limit checks to so as to avoid checks on all dir', example_str='/usr/share,/usr,/var', is_required=False)
+    check_only = CommaDelimitedStringListParameter(name='check_only', description='List of types of checks to perform instead of all', example_str='changed', is_required=False)
 
     analyzer_type = 'base'
     analyzer_id = 'file_package_verify'
@@ -138,9 +138,9 @@ class PkgNotPresentTrigger(BaseTrigger):
     __trigger_name__ = 'pkgnotpresent'
     __description__ = 'triggers if the package(s) specified in the params are not installed in the container image. The parameters specify different types of matches.',
 
-    pkg_full_match = NameVersionStringListParameter(name='pkgfullmatch', description='Match these values on both name and exact version. Entries are comma-delimited with a pipe between pkg name and version. E.g. "pkg1|version1,pkg2|version2"', is_required=False)
-    pkg_name_match = CommaDelimitedStringListParameter(name='pkgnamematch', description='List of names to match', is_required=False)
-    pkg_version_match = NameVersionStringListParameter(name='pkgversmatch', description='Names and versions to do a minimum-version check on. Any package in the list with a version less than the specified version will cause the trigger to fire', is_required=False)
+    pkg_full_match = NameVersionStringListParameter(name='pkgfullmatch', description='Match these values on both name and exact version. Entries are comma-delimited with a pipe between pkg name and version', example_str='pkg1|version1,pkg2|version2', is_required=False)
+    pkg_name_match = CommaDelimitedStringListParameter(name='pkgnamematch', description='List of names to match', example_str='wget,curl,libssl', is_required=False)
+    pkg_version_match = NameVersionStringListParameter(name='pkgversmatch', description='Names and versions to do a minimum-version check on. Any package in the list with a version less than the specified version will cause the trigger to fire', example_str='wget|1.19.3,curl|7.55.1', is_required=False)
 
     def evaluate(self, image_obj, context):
         fullmatch = self.pkg_full_match.value(default_if_none={})

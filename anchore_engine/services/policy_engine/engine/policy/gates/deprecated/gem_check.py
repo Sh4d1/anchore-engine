@@ -104,7 +104,7 @@ class PkgFullMatchTrigger(BaseTrigger):
     __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'gempkgfullmatch'
     __description__ = 'triggers if the evaluated image has an GEM package installed that matches one in the list given as a param (package_name|vers)'
-    fullmatch_blacklist = NameVersionStringListParameter(name='blacklist_gemfullmatch', description='List of name|version entries that are matched exactly for blacklist', is_required=False)
+    fullmatch_blacklist = NameVersionStringListParameter(name='blacklist_gemfullmatch', example_str='time_diff|1.0.1,json|1.2', description='List of name|version entries that are matched exactly for blacklist', is_required=False)
 
     def evaluate(self, image_obj, context):
         """
@@ -134,7 +134,7 @@ class PkgNameMatchTrigger(BaseTrigger):
     __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'gempkgnamematch'
     __description__ = 'triggers if the evaluated image has an GEM package installed that matches one in the list given as a param (package_name)'
-    namematch_blacklist = CommaDelimitedStringListParameter(name='blacklist_gemnamematch', description='List of gem package names that are blacklisted and will cause trigger to fire if detected in image')
+    namematch_blacklist = CommaDelimitedStringListParameter(name='blacklist_gemnamematch', example_str='json,time_diff', description='List of gem package names that are blacklisted and will cause trigger to fire if detected in image')
 
     def evaluate(self, image_obj, context):
         gems = image_obj.gems

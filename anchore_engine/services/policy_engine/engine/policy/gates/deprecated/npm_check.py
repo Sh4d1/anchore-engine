@@ -105,7 +105,7 @@ class PkgFullMatchTrigger(BaseTrigger):
     __trigger_name__ = 'npmpkgfullmatch'
     __description__ = 'triggers if the evaluated image has an NPM package installed that matches one in the list given as a param (package_name|vers)'
 
-    blacklist_names = NameVersionStringListParameter(name='blacklist_npmfullmatch', description='List of name|version matches for full package match on blacklist')
+    blacklist_names = NameVersionStringListParameter(name='blacklist_npmfullmatch', example_str='json|1.0.1,datetime|1.1.1', description='List of name|version matches for full package match on blacklist')
 
     def evaluate(self, image_obj, context):
         """
@@ -136,7 +136,7 @@ class PkgNameMatchTrigger(BaseTrigger):
     __trigger_name__ = 'npmpkgnamematch'
     __description__ = 'triggers if the evaluated image has an NPM package installed that matches one in the list given as a param (package_name)'
 
-    npmname_blacklist = CommaDelimitedStringListParameter(name='blacklist_npmnamematch', description='List of name strings to blacklist npm package names against')
+    npmname_blacklist = CommaDelimitedStringListParameter(name='blacklist_npmnamematch', example_str='json,moment', description='List of name strings to blacklist npm package names against')
 
     def evaluate(self, image_obj, context):
         npms = image_obj.npms

@@ -7,7 +7,7 @@ class FullMatchTrigger(BaseTrigger):
     __trigger_name__ = 'licfullmatch'
     __description__ = 'triggers if the evaluated image has a package installed with software distributed under the specified (exact match) license(s)'
 
-    license_blacklist = CommaDelimitedStringListParameter(name='licblacklist_fullmatch', description='List of license names to blacklist exactly')
+    license_blacklist = CommaDelimitedStringListParameter(name='licblacklist_fullmatch', example_str='BSD 2-Clause,GPLv3', description='List of license names to blacklist exactly')
 
     def evaluate(self, image_obj, context):
         fullmatchpkgs = []
@@ -26,7 +26,7 @@ class SubstringMatchTrigger(BaseTrigger):
     __trigger_name__ = 'licsubmatch'
     __description__ = 'triggers if the evaluated image has a package installed with software distributed under the specified (substring match) license(s)'
 
-    licenseblacklist_submatches = CommaDelimitedStringListParameter(name='licblacklist_submatch', description='List of strings to do substring match for blacklist')
+    licenseblacklist_submatches = CommaDelimitedStringListParameter(name='licblacklist_submatch', example_str='agpl,mit', description='List of strings to do substring match for blacklist')
 
     def evaluate(self, image_obj, context):
         matchpkgs = []

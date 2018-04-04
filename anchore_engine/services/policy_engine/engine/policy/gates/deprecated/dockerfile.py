@@ -45,8 +45,8 @@ class EffectiveUserTrigger(BaseTrigger):
     __trigger_name__ = 'effectiveuser'
     __description__ = 'Triggers if the effective user for the container is either root when not allowed or is not in a whitelist'
 
-    allowed_users = CommaDelimitedStringListParameter(name='allowed', description='List of user names allowed to be the effective user (last user entry) in the images history', is_required=False)
-    denied_users = CommaDelimitedStringListParameter(name='denied', description='List of user names forbidden from being the effective user for the image in the image history', is_required=False)
+    allowed_users = CommaDelimitedStringListParameter(name='allowed', example_str='nginx,postgres', description='List of user names allowed to be the effective user (last user entry) in the images history', is_required=False)
+    denied_users = CommaDelimitedStringListParameter(name='denied', example_str='root', description='List of user names forbidden from being the effective user for the image in the image history', is_required=False)
 
     _sanitize_regex = '\s*USER\s+\[?([^\]]+)\]?\s*'
 
@@ -82,9 +82,9 @@ class DirectiveCheckTrigger(BaseTrigger):
     __trigger_name__ = 'directivecheck'
     __description__ = 'Triggers if any directives in the list are found to match the described condition in the dockerfile'
 
-    directive = EnumStringParameter(name='directives', description='The Dockerfile instruction to check', enum_values=DIRECTIVES, is_required=True, related_to='check', sort_order=1)
-    check = EnumStringParameter(name='check', description='The type of check to perform', enum_values=CONDITIONS, is_required=True, related_to='directive, check_value', sort_order=2)
-    check_value = TriggerParameter(name='check_value', description='The value to check the dockerfile instruction against', is_required=False, related_to='directive, check', validator=TypeValidator("string"), sort_order=3)
+    directive = EnumStringParameter(name='directives', example_str='COPY', description='The Dockerfile instruction to check', enum_values=DIRECTIVES, is_required=True, related_to='check', sort_order=1)
+    check = EnumStringParameter(name='check', example_str='=', description='The type of check to perform', enum_values=CONDITIONS, is_required=True, related_to='directive, check_value', sort_order=2)
+    check_value = TriggerParameter(name='check_value', example_str='./app /app', description='The value to check the dockerfile instruction against', is_required=False, related_to='directive, check', validator=TypeValidator("string"), sort_order=3)
 
     _conditions_requiring_check_val = [
         '=', '!=', 'like', 'not_like', 'in', 'not_in'
@@ -130,8 +130,8 @@ class ExposeTrigger(BaseTrigger):
     __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'expose'
 
-    allowed_ports = CommaDelimitedNumberListParameter(name='allowedports', description='Comma delimited list of port numbers to allow (as a string)', is_required=False)
-    denied_ports = CommaDelimitedNumberListParameter(name='deniedports', description='Comma delimited list of port numbers to deny (as a string)', is_required=False)
+    allowed_ports = CommaDelimitedNumberListParameter(name='allowedports', example_str='80,8088', description='Comma delimited list of port numbers to allow (as a string)', is_required=False)
+    denied_ports = CommaDelimitedNumberListParameter(name='deniedports', example_str='22,53', description='Comma delimited list of port numbers to deny (as a string)', is_required=False)
 
     __description__ = 'triggers if Dockerfile is EXPOSEing ports that are not in ALLOWEDPORTS, or are in DENIEDPORTS'
 

@@ -12,7 +12,7 @@ class ContentMatchTrigger(BaseTrigger):
     __trigger_name__ = 'contentmatch'
     __description__ = 'Triggers if the content search analyzer has found any matches.  If the parameter is set, then will only trigger against found matches that are also in the FILECHECK_CONTENTMATCH parameter list.  If the parameter is absent or blank, then the trigger will fire if the analyzer found any matches.'
 
-    contentregex_names = PipeDelimitedStringListParameter(name='filecheck_contentregexp', description='Pipe delimited list of named regexes from the FILECHECK_CONTENTMATCH parameter list for the analyzers')
+    contentregex_names = PipeDelimitedStringListParameter(name='filecheck_contentregexp', example_str='.*password.*|PRIV_KEY', description='Pipe delimited list of named regexes from the FILECHECK_CONTENTMATCH parameter list for the analyzers')
 
     def evaluate(self, image_obj, context):
         match_filter = self.contentregex_names.value()

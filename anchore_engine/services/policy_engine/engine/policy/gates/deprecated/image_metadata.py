@@ -10,7 +10,7 @@ log = get_logger()
 class ImageMetadataAttributeCheckTrigger(BaseTrigger):
     __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'attributecheck'
-    __description__ = 'triggers if a named image attribute matches the given condition'
+    __description__ = 'Evaluates a named image attribute against the given condition and fires if matched'
 
     __ops__ = {
         '=': CheckOperation(requires_rvalue=True, eval_function=lambda x, y: x == y),
@@ -39,9 +39,9 @@ class ImageMetadataAttributeCheckTrigger(BaseTrigger):
 
     __value_validator__ = lambda x: True
 
-    attribute = EnumStringParameter(name='attributes', description='Attribute name to apply as rvalue to the check operation', enum_values=__valid_attributes__.keys(), is_required=True, sort_order=1)
-    check = EnumStringParameter(name='check', description='The operation to perform the evaluation', enum_values=__ops__.keys(), is_required=True, sort_order=2)
-    check_value = TriggerParameter(name='check_value', description='The lvalue in the check operation.', validator=TypeValidator('string'), sort_order=3)
+    attribute = EnumStringParameter(name='attributes', example_str='size', description='Attribute name to apply as rvalue to the check operation', enum_values=__valid_attributes__.keys(), is_required=True, sort_order=1)
+    check = EnumStringParameter(name='check', example_str='>', description='The operation to perform the evaluation', enum_values=__ops__.keys(), is_required=True, sort_order=2)
+    check_value = TriggerParameter(name='check_value', example_str='100000000', description='The lvalue in the check operation.', validator=TypeValidator('string'), sort_order=3)
 
     def evaluate(self, image_obj, context):
         attr = self.attribute.value()
@@ -69,7 +69,7 @@ class ImageMetadataGate(Gate):
     __lifecycle_state__ = LifecycleStates.deprecated
     __superceded_by__ = 'metadata'
     __gate_name__ = 'metadatacheck'
-    __description__ = 'Check Image Metadata'
+    __description__ = 'Checks against image metadata gathered during analysis'
 
     __triggers__ = [
         ImageMetadataAttributeCheckTrigger,

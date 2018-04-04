@@ -11,7 +11,7 @@ class SecretContentMatchTrigger(BaseTrigger):
     __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'contentmatch'
     __description__ = 'Triggers if the content search analyzer has found any matches.  If the parameter is set, then will only trigger against found matches that are also in the SECRETCHECK_CONTENTREGEXP parameter list.  If the parameter is absent or blank, then the trigger will fire if the analyzer found any matches.'
-    secret_contentregexp = PipeDelimitedStringListParameter(name='secretcheck_contentregexp', description='Names of content regexps configured in the analyzer that should trigger if found in the image')
+    secret_contentregexp = PipeDelimitedStringListParameter(name='secretcheck_contentregexp', example_str='AWS_SECRET_KEY|PRIV_KEY', description='Names of content regexps configured in the analyzer that should trigger if found in the image')
 
     def evaluate(self, image_obj, context):
         match_filter = self.secret_contentregexp.value(default_if_none=[])
@@ -45,7 +45,7 @@ class SecretFilenameMatchTrigger(BaseTrigger):
     __lifecycle_state__ = LifecycleStates.deprecated
     __trigger_name__ = 'filenamematch'
     __description__ = 'Triggers if a file exists in the container that matches with any of the regular expressions given as SECRETCHECK_NAMEREGEXP parameters.'
-    name_regexps = PipeDelimitedStringListParameter(name='secretcheck_nameregexp', description='List of regexp names in the analyzer that should trigger if matched in the image')
+    name_regexps = PipeDelimitedStringListParameter(name='secretcheck_nameregexp', example_str='.*password.*|.*/.aws/.*|.*/.ssh/.*', description='List of regexp names in the analyzer that should trigger if matched in the image')
 
     def evaluate(self, image_obj, context):
         fname_regexps = self.name_regexps.value(default_if_none=[])
